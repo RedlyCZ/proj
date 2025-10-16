@@ -2,8 +2,11 @@
 #include <string>
 #include <cctype>
 #include <print>
+#include <algorithm>
 
 using namespace std;
+
+constexpr char sentenceEnders[] = { '.', '?', '!' };
 
 struct counters {
     int charCount = 0;
@@ -21,9 +24,10 @@ public:
     void printInfo();
 private:
     void processChar(char nextChar);
-    bool wordActive = false;
     bool sentenceActive = false;
     bool numberActive = false;
+    bool rowActive = false;
+    bool wordPotential = true;
     int activeNmbValue = 0;
 };
 
@@ -32,6 +36,7 @@ void SheepCounter::processStream(istream& stream) {
     for (;;) {
         c = stream.get();
         if (stream.fail()) {
+            numberSum = numberSum + activeNmbValue; //Usefull, if stream ended with a number
             return;
         }
         processChar(c);
@@ -39,57 +44,56 @@ void SheepCounter::processStream(istream& stream) {
 }
 
 void SheepCounter::processChar(char nextChar) {
-    cntrs.charCount++; //Chars - MEL BY SE POCITAT I KONEC RADKY MEZI ZNAKY?
+    cntrs.charCount++; //Chars
     //Numbers
-    if (isdigit(nextChar)) {
+    if (isdigit(nextChar) && !numberActive && wordPotential) {
         numberActive = true;
-        activeNmbValue = (activeNmbValue * 10) + nextChar - '0'; //Horners method
+        cntrs.numberCount++;
+        activeNmbValue = nextChar - '0';
     }
     else {
-        if (numberActive) {
+        if (isdigit(nextChar)) {
+            activeNmbValue = (activeNmbValue * 10) + nextChar - '0'; //Horners method
+        }
+        if (numberActive && !isdigit(nextChar)) {
             numberActive = false;
-            cntrs.numberCount++;
             numberSum = numberSum + activeNmbValue;
             activeNmbValue = 0;
         }
     }
-    //Words
-    if (isalpha(nextChar)) {
-        wordActive = true;
-    }
-    else {
-        if (wordActive) {
-            wordActive = false;
-            cntrs.wordCount++;
-        }
-    }
-    //Sentences
-    if (isupper(nextChar)) {
+    //Words (and part of sentences
+    if (isalpha(nextChar) && wordPotential) {
+        cntrs.wordCount++;
         sentenceActive = true;
     }
+    if (isalnum(nextChar)) {
+        wordPotential = false;
+    }
     else {
-        if (nextChar == '.' && sentenceActive) {
-            cntrs.sentenceCount++;
-            sentenceActive = false;
-        }
+        wordPotential = true;
+    }
+    //Sentences
+    if ((ranges::contains(sentenceEnders, nextChar)) && sentenceActive) {
+        cntrs.sentenceCount++;
+        sentenceActive = false;
     }
     //Rows
-    if (nextChar == '\n') {
+    if (!rowActive && isalnum(nextChar)) {
+        rowActive = true;
         cntrs.rowCount++;
-        if (wordActive) {
-            cntrs.wordCount++;
-        }
+    }
+    if (nextChar == '\n') {
+        rowActive = false;
     }
 }
 
 void SheepCounter::printInfo() {
-    println("In the stream, there were:");
-    println("   {} characters", cntrs.charCount);
-    println("   {} rows", cntrs.rowCount);
-    println("   {} words", cntrs.wordCount);
-    println("   {} numbers", cntrs.numberCount);
-    println("   {} sentences", cntrs.sentenceCount);
-    println("The sum of all the numbers was {}", numberSum);
+    println("znaku: {}", cntrs.charCount);
+    println("slov: {}", cntrs.wordCount);
+    println("vet: {}", cntrs.sentenceCount);
+    println("radku: {}", cntrs.rowCount);
+    println("cisel: {}", cntrs.numberCount);
+    println("soucet: {}", numberSum);
 }
 
 int main()
