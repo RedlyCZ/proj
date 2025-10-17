@@ -3,6 +3,8 @@
 #include <cctype>
 #include <print>
 #include <algorithm>
+#include <vector>
+#include <fstream>
 
 using namespace std;
 
@@ -16,6 +18,19 @@ struct counters {
     int numberCount = 0;
 };
 
+struct booleans {
+    bool sentenceActive = false;
+    bool numberActive = false;
+    bool rowActive = false;
+    bool wordPotential = true;
+    void reset() {
+        sentenceActive = false;
+        numberActive = false;
+        rowActive = false;
+        wordPotential = true;
+    }
+};
+
 class SheepCounter {
 public:
     counters cntrs;
@@ -24,15 +39,13 @@ public:
     void printInfo();
 private:
     void processChar(char nextChar);
-    bool sentenceActive = false;
-    bool numberActive = false;
-    bool rowActive = false;
-    bool wordPotential = true;
+    booleans bl;
     int activeNmbValue = 0;
 };
 
 void SheepCounter::processStream(istream& stream) {
     char c;
+    bl.reset();
     for (;;) {
         c = stream.get();
         if (stream.fail()) {
@@ -46,44 +59,46 @@ void SheepCounter::processStream(istream& stream) {
 void SheepCounter::processChar(char nextChar) {
     cntrs.charCount++; //Chars
     //Numbers
-    if (isdigit(nextChar) && !numberActive && wordPotential) {
-        numberActive = true;
+    if (isdigit(nextChar) && !bl.numberActive && bl.wordPotential) {
+        bl.numberActive = true;
         cntrs.numberCount++;
         activeNmbValue = nextChar - '0';
     }
     else {
-        if (isdigit(nextChar)) {
-            activeNmbValue = (activeNmbValue * 10) + nextChar - '0'; //Horners method
-        }
-        if (numberActive && !isdigit(nextChar)) {
-            numberActive = false;
-            numberSum = numberSum + activeNmbValue;
-            activeNmbValue = 0;
+        if (bl.numberActive) {
+            if (isdigit(nextChar)) {
+                activeNmbValue = (activeNmbValue * 10) + nextChar - '0'; //Horners method
+            }
+            if (bl.numberActive && !isdigit(nextChar)) {
+                bl.numberActive = false;
+                numberSum = numberSum + activeNmbValue;
+                activeNmbValue = 0;
+            }
         }
     }
     //Words (and part of sentences
-    if (isalpha(nextChar) && wordPotential) {
+    if (isalpha(nextChar) && bl.wordPotential) {
         cntrs.wordCount++;
-        sentenceActive = true;
+        bl.sentenceActive = true;
     }
     if (isalnum(nextChar)) {
-        wordPotential = false;
+        bl.wordPotential = false;
     }
     else {
-        wordPotential = true;
+        bl.wordPotential = true;
     }
     //Sentences
-    if ((ranges::contains(sentenceEnders, nextChar)) && sentenceActive) {
+    if ((ranges::contains(sentenceEnders, nextChar)) && bl.sentenceActive) {
         cntrs.sentenceCount++;
-        sentenceActive = false;
+        bl.sentenceActive = false;
     }
     //Rows
-    if (!rowActive && isalnum(nextChar)) {
-        rowActive = true;
+    if (!bl.rowActive && isalnum(nextChar)) {
+        bl.rowActive = true;
         cntrs.rowCount++;
     }
     if (nextChar == '\n') {
-        rowActive = false;
+        bl.rowActive = false;
     }
 }
 
@@ -96,10 +111,26 @@ void SheepCounter::printInfo() {
     println("soucet: {}", numberSum);
 }
 
-int main()
+int main(int argc, char ** argv)
 {
+    vector<string> args(argv, argv + argc);
     SheepCounter counter;
-    counter.processStream(cin);
+    if (argc > 1) { //if filemode
+        for (int i = 1; i < argc; i++) {
+            ifstream f;
+            f.open(args[i]);
+            if (f.good()) {
+                counter.processStream(f);
+            }
+            else {
+                println("error, problem with file");
+                break;
+            }
+        }
+    }
+    else {
+        counter.processStream(cin);
+    }
     counter.printInfo();
 }
 
