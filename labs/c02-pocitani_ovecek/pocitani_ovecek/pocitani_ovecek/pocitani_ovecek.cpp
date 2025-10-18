@@ -49,7 +49,7 @@ void SheepCounter::processStream(istream& stream) {
     for (;;) {
         c = stream.get();
         if (stream.fail()) {
-            numberSum = numberSum + activeNmbValue; //Usefull, if stream ended with a number
+            numberSum = numberSum + activeNmbValue; //Useful, if stream ended with a number
             return;
         }
         processChar(c);
@@ -76,7 +76,7 @@ void SheepCounter::processChar(char nextChar) {
             }
         }
     }
-    //Words (and part of sentences
+    //Words (and part of sentences)
     if (isalpha(nextChar) && bl.wordPotential) {
         cntrs.wordCount++;
         bl.sentenceActive = true;
