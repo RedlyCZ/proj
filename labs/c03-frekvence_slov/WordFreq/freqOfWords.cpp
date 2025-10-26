@@ -3,6 +3,7 @@
 #include "freqOfWords.h"
 #include <algorithm>
 #include <functional>
+#include <print>
 using namespace std;
 
 void freqAnalyser::processWord(std::string& slovo) {
@@ -12,6 +13,20 @@ void freqAnalyser::processWord(std::string& slovo) {
 	}
 	else {
 		freqMap[slovo] = 1;
+	}
+	++wordCount;
+}
+
+void freqAnalyser::processWordVector(std::vector<std::string>& words) {
+	for (auto&& x : words) {
+		processWord(x);
+	}
+}
+
+void freqAnalyser::printWholeMap() {
+	for (auto&& x : freqMap) {
+		print("{} {}", x.first, x.second);
+		print(",");
 	}
 }
 

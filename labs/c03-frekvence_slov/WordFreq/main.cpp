@@ -1,31 +1,44 @@
 #include <map>
 #include <string>
+#include <vector>
 #include "freqOfWords.h"
 #include <print>
 using namespace std;
 
-int main() {
-	freqAnalyser a;
-	string slovo = "apt";
-	string dalsiSlovo = "ahaaha";
-	string tretiSlovo = "dont";
-	string ctvrte = "you";
-	a.processWord(slovo);
-	a.processWord(slovo);
-	a.processWord(slovo);
-	a.processWord(dalsiSlovo);
-	a.processWord(dalsiSlovo);
-	a.processWord(tretiSlovo);
-	a.processWord(tretiSlovo);
-	a.processWord(ctvrte);
+int main(int argc, char ** argv) {
+	vector<string> arg(argv + 1, argv + argc);
 
-	map<string, int>::const_iterator ctecka = a.freqMap.begin();
-	//while (ctecka != a.freqMap.end()) {
-	//	println("klic {}, payload {}", ctecka->first, ctecka->second);
-	//	++ctecka;
-	//}
+	freqAnalyser a;
+
+	if (argc>1 && arg[0] == "-k") {
+		int rank = stoi(arg[1]);
+		arg.erase(arg.begin(), arg.begin() + 1);
+		a.processWordVector(arg);
+		bool firsttime = true;
+		for (auto&& x : a.kthMostFrequent(rank)) {
+			if (firsttime) {
+				print("{}", a.freqMap[x]);
+				firsttime = false;
+			}
+			print(",{}", x);
+		}
+	}
+	else {
+		a.processWordVector(arg);
+		a.printWholeMap();
+	}
+
+	
+
+	
+	
+	
+
+	/*
 	for (auto&& x : a.kthMostFrequent(2)) {
 		println("{}", x);
 	}
-	
+	println("{}", a.wordCount);
+	println("{} s frekvenci : {}", slovo, a.freqMap[slovo]);
+	*/
 }
