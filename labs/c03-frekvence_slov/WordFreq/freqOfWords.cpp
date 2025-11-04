@@ -6,7 +6,7 @@
 #include <print>
 using namespace std;
 
-void freqAnalyser::processWord(std::string& slovo) {
+void freqAnalyser::processWord(const std::string& slovo) {
 	auto it = freqMap.find(slovo);
 	if (it != freqMap.end()) {
 		++(it->second);
@@ -17,7 +17,7 @@ void freqAnalyser::processWord(std::string& slovo) {
 	++wordCount;
 }
 
-void freqAnalyser::processWordVector(std::vector<std::string>& words) {
+void freqAnalyser::processWordVector(const std::vector<std::string>& words) {
 	for (auto&& x : words) {
 		processWord(x);
 	}
