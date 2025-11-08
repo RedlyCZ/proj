@@ -17,33 +17,48 @@ int main(int argc, char** argv) {
 		getline(cin, r);
 		if (cin.fail()) break;
 		istringstream line(r);
-		line >> cmd >> arg;
-		if (cmd == "add" || cmd =="del") {
-			line >> secondArg;
-			if (cmd == "add") {
-				vocab.add(arg, secondArg);
-			}
-			else {
-				vocab.del(arg, secondArg);
+		line >> cmd;
+		if (cmd == "add" || cmd == "del") {
+			if (line >> arg) {
+				if (line >> secondArg) {
+					if (cmd == "add") {
+						vocab.add(arg, secondArg);
+					}
+					else {
+						vocab.del(arg, secondArg);
+					}
+				}
+				else {
+					if (cmd == "del") {
+						vocab.del(arg);
+					}
+				}
 			}
 		}
 		else {
 			if (cmd == "find") {
-				auto answer = vocab.find(arg);
-				for (auto&& x : answer) {
-					print("{} ", x.get());
+				if (line >> arg) {
+					auto answer = vocab.find(arg);
+					if (!answer.empty()) {
+						print("{}", answer.front().get());
+						for (size_t i = 1; i < answer.size(); ++i) {
+							print(" {}", answer[i].get());
+						}
+						println("");
+					}
 				}
-				println("");
 			}
 			else {
 				if (cmd == "prefix") {
-					auto answer = vocab.prefix(arg);
-					for (auto&& x : answer) {
-						print("{}:", x.first); 
-						for (auto&& y : x.second) {
-							print(" {}", y.get());
+					if (line >> arg) {
+						auto answer = vocab.prefix(arg);
+						for (auto&& x : answer) {
+							print("{}:", x.first);
+							for (auto&& y : x.second) {
+								print(" {}", y.get());
+							}
+							println("");
 						}
-						println("");
 					}
 				}
 			}
