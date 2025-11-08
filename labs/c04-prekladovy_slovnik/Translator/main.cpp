@@ -11,13 +11,43 @@ using namespace std;
 
 int main(int argc, char** argv) {
 	vector<string> args(argv+1, argv + argc);
-	TransVoc tester;
-	tester.add("ahoj", "hello");
-	tester.add("ahoj", "wassup");
-	tester.add("naschle", "bye");
-	tester.add("modra", "blue");
-	vector<std::reference_wrapper<const string>> answer1 = tester.find("ahoj");
-	println("{}", answer1[0].get());
-	println("{}", answer1[1].get());
-	println("{}", answer1.size());
+	TransVoc vocab;
+	string r, cmd, arg, secondArg;
+	for (;;) {
+		getline(cin, r);
+		if (cin.fail()) break;
+		istringstream line(r);
+		line >> cmd >> arg;
+		if (cmd == "add" || cmd =="del") {
+			line >> secondArg;
+			if (cmd == "add") {
+				vocab.add(arg, secondArg);
+			}
+			else {
+				vocab.del(arg, secondArg);
+			}
+		}
+		else {
+			if (cmd == "find") {
+				auto answer = vocab.find(arg);
+				for (auto&& x : answer) {
+					print("{} ", x.get());
+				}
+				println("");
+			}
+			else {
+				if (cmd == "prefix") {
+					auto answer = vocab.prefix(arg);
+					for (auto&& x : answer) {
+						print("{}:", x.first); 
+						for (auto&& y : x.second) {
+							print(" {}", y.get());
+						}
+						println("");
+					}
+				}
+			}
+		}
+	}
 }
+
