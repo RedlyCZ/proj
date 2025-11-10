@@ -7,18 +7,9 @@
 using namespace std;
 
 vector<reference_wrapper<const string>> TransVoc::find(const string& slovo) const {
-	//For performance issues, method return references of string, not string themselves
+	//For performance issues, method return references of string, not string themselves to avoid copy
 	vector<reference_wrapper<const string>> returnVec;
 
-	/**
-	auto first = vocabulary.lower_bound({slovo, ""}); //surely predecessor to all searched elements
-	string stopper = slovo + '0'; //surely direct alphabetical successor of this key 
-	auto ender = vocabulary.upper_bound({ stopper, "" });
-	for (auto i = first; i != ender; i++) {
-		returnVec.push_back(std::cref(i->second));
-	}
-	return returnVec;
-	**/
 	auto it = vocabulary.lower_bound({ slovo, "" });
 
 	while (it != vocabulary.end() && it->first == slovo) {
@@ -31,18 +22,12 @@ vector<reference_wrapper<const string>> TransVoc::find(const string& slovo) cons
 
 vector<pair<string, vector<reference_wrapper<const string>>>> TransVoc::prefix(const string& slovo) const {
 	vector<pair<string, vector<reference_wrapper<const string>>>> returnVec;
-	/** auto it = setOfKeys.lower_bound(slovo); //first word with such prefix
-	string stopper = slovo;
-	stopper[slovo.length() - 1]++; //surely alphabetical successor to all possible keys with this prefix
-	auto ender = setOfKeys.lower_bound(stopper);
-	for (auto iter = it; iter != ender; iter++) {
-		returnVec.push_back({ (*iter), this->find((*iter)) });
-	}
-	return returnVec;
-	**/
+
 	auto it = setOfKeys.lower_bound(slovo);
 
 	while (it != setOfKeys.end() && it->starts_with(slovo) == true) {
+		//starts_vec is not fully optimal as it many times reads the same prefix again and again (starts_with)
+		//but going for performance here would require some alphabetic hacks, which would make it error-prone
 		returnVec.push_back({ *it, this->find(*it) });
 		++it;
 	}
@@ -51,15 +36,6 @@ vector<pair<string, vector<reference_wrapper<const string>>>> TransVoc::prefix(c
 }
 
 void TransVoc::del(const std::string& slovo) {
-	/**
-	auto first = vocabulary.lower_bound({slovo, ""});
-	auto stopper = slovo + (char)0;
-	auto end = vocabulary.lower_bound({ stopper, "" });
-	if (first != end) {
-			vocabulary.erase(first, end);
-			setOfKeys.erase(slovo);
-	}
-	**/
 	auto range_start = vocabulary.lower_bound({ slovo, "" });
 	auto it = range_start;
 
@@ -67,6 +43,7 @@ void TransVoc::del(const std::string& slovo) {
 		++it;
 	}
 	auto range_end = it;
+	//here the same problem as in prefix, also reads many strings, but further optimisation would require alphabetic hacks
 
 	if (range_start != range_end) {
 		vocabulary.erase(range_start, range_end);

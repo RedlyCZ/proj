@@ -19,8 +19,8 @@ struct CustomComparator {
 class TransVoc {
 public:
 	void add(const std::string& slovo , const std::string& cizi) {
- 		vocabulary.insert({ slovo, cizi });
-		setOfKeys.insert(slovo);
+ 		vocabulary.emplace(slovo, cizi);
+		setOfKeys.emplace(slovo);
 	}
 	void del(const std::string& slovo, const std::string& cizi) {
 		vocabulary.erase({ slovo, cizi });
