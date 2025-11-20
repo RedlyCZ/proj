@@ -5,20 +5,25 @@
 
 using namespace std;
 
-int main(int argc, int argv) {
+int main(int argc, char ** argv) {
 	MProc processor;
 	string word;
 	string output;
-	string spaceBetween = "";
+	string spaceBetween;
 	for (;;) {
 		cin >> word;
-		if (cin.fail()) {
+		if (cin.fail() || processor.inputFail) {
 			break;
 		}
 		output = processor.processWord(word);
 		if (output.size() != 0) {
-			print("{}{}", spaceBetween, output);
-			spaceBetween = " ";
+			print("{}", output);
+			
 		}
+		spaceBetween = cin.get();
+		if (cin.fail()) {
+			break;
+		}
+		print("{}", spaceBetween);
 	}
 }

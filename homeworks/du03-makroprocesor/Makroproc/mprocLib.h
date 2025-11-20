@@ -6,8 +6,9 @@
 
 class MProc {
 public:
-	MProc() : defining{ false } {}
+	MProc() : inputFail{ false }, defining{ false } {}
 	std::string processWord(const std::string& word);
+	bool inputFail;
 private:
 	std::map<std::string, std::string> macros;
 	void addMacro(const std::string& name, const std::string& value);

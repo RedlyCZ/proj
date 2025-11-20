@@ -32,6 +32,11 @@ string MProc::processWord(const string& word) {
 					return word;
 				}
 			}
+			else { //end of definition before opening definition
+				println(" {}", "Error");
+				inputFail = true;
+				return("");
+			}
 		}
 		else { //if not definition of macro
 			if (macros.count(word) == 1) { //should be replaced by macro
@@ -49,6 +54,14 @@ string MProc::processWord(const string& word) {
 			defining = false;
 		}
 		else {
+			if (word.at(0) == '#') { //word.size() != 1
+				string macroName = word.substr(1);
+				if (isalpha(macroName.at(0)) && isStringAlnum(macroName)) { //definition inside of definition - BANNED
+					println(" {}", "Error");
+					inputFail = true;
+					return("");
+				}
+			}
 			if (macros.count(word) == 1) { //should be replaced by macro
 				definedMacroValue.append(macros.find(word)->second + " ");
 			}
