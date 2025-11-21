@@ -2,28 +2,27 @@
 #include <iostream>
 #include <string>
 #include <print>
+#include <vector>
 
 using namespace std;
 
 int main(int argc, char ** argv) {
+	vector<string> args(argv + 1, argv + argc);
 	MProc processor;
-	string word;
+	if (args.size() > 1) {
+		processor.addArgsMacro(args);
+	}
 	string output;
-	string spaceBetween;
 	for (;;) {
-		cin >> word;
-		if (cin.fail() || processor.inputFail) {
-			break;
-		}
-		output = processor.processWord(word);
-		if (output.size() != 0) {
-			print("{}", output);
-			
-		}
-		spaceBetween = cin.get();
+		char nextChar = cin.get();
 		if (cin.fail()) {
 			break;
 		}
-		print("{}", spaceBetween);
+		output = processor.processChar(nextChar);
+		print("{}", output);
+		if (processor.inputFail) {
+			break;
+		}
 	}
+	print("{}", processor.returnLastWord());
 }

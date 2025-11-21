@@ -6,73 +6,127 @@
 
 using namespace std;
 
-bool MProc::isStringAlnum(const string& word) {
-	// Check if string is not empty and all chars are alphanumeric
-	if (word.empty()) {
-		return false;
+string MProc::processChar(char nextChar) {
+	switch (this->state) {
+	case THROUGH:
+		return processCharThrough(nextChar);
+	case NAMING:
+		return processCharNaming(nextChar);
+	case DEFINING:
+		return processCharDefining(nextChar);
 	}
-	return std::all_of(word.begin(), word.end(), [](unsigned char c) { return std::isalnum(c); });
 }
 
-
-
-string MProc::processWord(const string& word) {
-	if (!defining) {
-		if (word.at(0) == '#') {
-			if (word.size() > 1) {
-				string macroName = word.substr(1);
-				if (isalpha(macroName.at(0)) && isStringAlnum(macroName)) {
-					//So it indeed is a definition of macro
-					definedMacroName = macroName;
-					definedMacroValue = "";
-					defining = true;
-					return("");
-				}
-				else {
-					return word;
-				}
-			}
-			else { //end of definition before opening definition
-				println(" {}", "Error");
-				inputFail = true;
-				return("");
-			}
+string MProc::processCharThrough(char nextChar) {
+	string strReturn = "";
+	if (isspace(nextChar)) {
+		if (this->hashtagPrev) { //space after hashtag when not defining is not permitted
+			this->inputFail = true;
+			return "Error\n";
 		}
-		else { //if not definition of macro
-			if (macros.count(word) == 1) { //should be replaced by macro
-				return macros.find(word)->second; //return its value
-			}
-			else { //count of map always returns 1 or 0, so this else means there is no macro of this name
-				return word;
-			}
-		}
-	}
-	else {
-		if (word.at(0) == '#' && word.size() == 1) { //end of defining
-			definedMacroValue.pop_back(); //removes extra space at the end of macro value
-			addMacro(definedMacroName, definedMacroValue);
-			defining = false;
+		hashtagPrev = false; //space is not hashtag
+		if (buildWord.size() == 0) {
+			return (strReturn + nextChar);
 		}
 		else {
-			if (word.at(0) == '#') { //word.size() != 1
-				string macroName = word.substr(1);
-				if (isalpha(macroName.at(0)) && isStringAlnum(macroName)) { //definition inside of definition - BANNED
-					println(" {}", "Error");
-					inputFail = true;
-					return("");
-				}
-			}
-			if (macros.count(word) == 1) { //should be replaced by macro
-				definedMacroValue.append(macros.find(word)->second + " ");
+			if (macros.count(buildWord) == 1) { //should be replaced by macro
+				strReturn = macros.find(buildWord)->second + nextChar; //use the macro and add the space (nextChar)
+				buildWord = "";
+				return strReturn;
 			}
 			else {
-				definedMacroValue.append(word + " ");
+				strReturn = buildWord + nextChar;
+				buildWord = "";
+				return strReturn;
 			}
 		}
-		return("");
 	}
+	if (nextChar == '#') {
+		this->hashtagPrev = true;
+		return strReturn;
+	}
+	if (isalpha(nextChar) && hashtagPrev) {
+		hashtagPrev = false;
+		state = NAMING;
+		processChar(nextChar);
+		return strReturn;
+	}
+	hashtagPrev = false;
+	buildWord += nextChar; //if any other char append it to the word being build
+	return strReturn; //dont want return nothing yet, dont know whether it will transfrom
+}
+
+string MProc::returnLastWord(){
+	if (macros.count(buildWord) == 1) {
+		return(macros.find(buildWord)->second);
+	}
+	else {
+		return buildWord;
+	}
+}
+
+string MProc::processCharNaming(char nextChar) {
+	if (isspace(nextChar)) {
+		state = DEFINING;
+	}
+	if (isalnum(nextChar)){
+		definedMacroName += nextChar;
+	}
+	//Would do unexpected things if definition is not correct (not only from alnums) -- Correct
+	return ""; //when naming, we dont want to return nothing
+}
+
+string MProc::processCharDefining(char nextChar) {
+	if (isspace(nextChar)) {
+		if (hashtagPrev) { //end of definition
+			this->addMacro(definedMacroName, definedMacroValue);
+			definedMacroName = "";
+			definedMacroValue = "";
+			state = THROUGH;
+			this->hashtagPrev = false;
+			return "";
+		}
+		if (buildWord.size() == 0) {
+			definedMacroValue += nextChar;
+			return "";
+		}
+		else {
+			if (macros.count(buildWord) == 1) {
+				definedMacroValue += (macros.find(buildWord)->second + nextChar);
+			}
+			else {
+				definedMacroValue += (buildWord + nextChar);
+			}
+			buildWord = "";
+			return "";
+		}
+	}
+	if (nextChar == '#') {
+		this->hashtagPrev = true;
+		return "";
+	}
+	if (hashtagPrev) { 
+		if (isalpha(nextChar)) { //definition inside definition - which is banned
+			this->inputFail = true;
+			return "Error\n";
+		}
+		else { //also may need some handling here :D, this works with good input without many # symbols used incorrectly
+			this->hashtagPrev = false;
+		}
+	}
+	//if still here, nextChar is just some nonimportant symbol (alnum or sth)
+	buildWord += nextChar;
+	return ""; //when defining, we dont want to return nothinf
 }
 
 void MProc::addMacro(const string& macroName, const string& macroValue) {
 	macros.emplace(macroName, macroValue);
+}
+
+void MProc::addArgsMacro(const vector<string>& args) {
+	string macroBody = args[1];
+	for (auto it = args.cbegin() + 2; it != args.cend(); it++) {
+		macroBody.append(" " + (*it));
+	}
+	addMacro(args[0], macroBody);
 }
