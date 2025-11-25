@@ -15,14 +15,14 @@ int main(int argc, char ** argv) {
 	string output;
 	for (;;) {
 		char nextChar = cin.get();
-		if (cin.fail()) {
+		if (cin.fail()) { //happens if stream is broken or ended
 			break;
 		}
 		output = processor.processChar(nextChar);
 		print("{}", output);
-		if (processor.inputFail) {
+		if (processor.inputFail) { //happens if Error was printed, and processor ends
 			break;
 		}
 	}
-	print("{}", processor.returnLastWord());
+	print("{}", processor.returnLastWord()); //if stream ended but some word is still loaded inside
 }

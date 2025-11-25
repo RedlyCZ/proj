@@ -15,49 +15,50 @@ string MProc::processChar(char nextChar) {
 	case DEFINING:
 		return processCharDefining(nextChar);
 	}
+	return ""; //This wont really happen unless some very big problem, but compiler showed warning C4715, that not all paths have return
 }
 
 string MProc::processCharThrough(char nextChar) {
-	string strReturn = "";
-	if (isspace(nextChar)) {
+	if (isspace(nextChar)) { //if space came, we want to process the word that is loaded inside the buildword buffer
 		if (this->hashtagPrev) { //space after hashtag when not defining is not permitted
 			this->inputFail = true;
-			return "Error\n";
+			return this->errorMessage;
 		}
 		hashtagPrev = false; //space is not hashtag
 		if (buildWord.size() == 0) {
-			return (strReturn + nextChar);
+			return string(1,nextChar);
 		}
 		else {
+			string strReturn;
 			if (macros.count(buildWord) == 1) { //should be replaced by macro
 				strReturn = macros.find(buildWord)->second + nextChar; //use the macro and add the space (nextChar)
 				buildWord = "";
 				return strReturn;
 			}
-			else {
+			else { //no macro is adequate
 				strReturn = buildWord + nextChar;
 				buildWord = "";
 				return strReturn;
 			}
 		}
 	}
-	if (nextChar == '#') {
+	if (nextChar == '#') { //hashtags are not displayed
 		this->hashtagPrev = true;
-		return strReturn;
+		return "";
 	}
-	if (isalpha(nextChar) && hashtagPrev) {
+	if (isalpha(nextChar) && hashtagPrev) { //beginning of macro definition
 		hashtagPrev = false;
 		state = NAMING;
-		processChar(nextChar);
-		return strReturn;
+		processChar(nextChar); //for we already loaded first char of macro def
+		return "";
 	}
 	hashtagPrev = false;
 	buildWord += nextChar; //if any other char append it to the word being build
-	return strReturn; //dont want return nothing yet, dont know whether it will transfrom
+	return ""; //dont want return nothing yet, dont know whether it will transfrom
 }
 
 string MProc::returnLastWord(){
-	if (macros.count(buildWord) == 1) {
+	if (macros.count(buildWord) == 1) { //if the word built represents some macro
 		return(macros.find(buildWord)->second);
 	}
 	else {
@@ -72,8 +73,14 @@ string MProc::processCharNaming(char nextChar) {
 	if (isalnum(nextChar)){
 		definedMacroName += nextChar;
 	}
-	//Would do unexpected things if definition is not correct (not only from alnums) -- Correct
-	return ""; //when naming, we dont want to return nothing
+
+	if (!isspace(nextChar) && !isalnum(nextChar)) { //banned by assignment rules
+		this->inputFail = true;
+		return this->errorMessage;
+	}
+	else {
+		return ""; //when naming, we want to return nothing
+	}
 }
 
 string MProc::processCharDefining(char nextChar) {
@@ -84,21 +91,21 @@ string MProc::processCharDefining(char nextChar) {
 			definedMacroValue = "";
 			state = THROUGH;
 			this->hashtagPrev = false;
-			return "";
+			return ""; //when naming, we want to return nothing
 		}
 		if (buildWord.size() == 0) {
 			definedMacroValue += nextChar;
-			return "";
+			return ""; //when naming, we want to return nothing
 		}
 		else {
 			if (macros.count(buildWord) == 1) {
-				definedMacroValue += (macros.find(buildWord)->second + nextChar);
+				definedMacroValue += (macros.find(buildWord)->second + nextChar); //allows usage of macro in macro definition
 			}
 			else {
 				definedMacroValue += (buildWord + nextChar);
 			}
 			buildWord = "";
-			return "";
+			return ""; //when naming, we want to return nothing
 		}
 	}
 	if (nextChar == '#') {
@@ -108,15 +115,15 @@ string MProc::processCharDefining(char nextChar) {
 	if (hashtagPrev) { 
 		if (isalpha(nextChar)) { //definition inside definition - which is banned
 			this->inputFail = true;
-			return "Error\n";
+			return this->errorMessage;
 		}
-		else { //also may need some handling here :D, this works with good input without many # symbols used incorrectly
+		else {
 			this->hashtagPrev = false;
 		}
 	}
 	//if still here, nextChar is just some nonimportant symbol (alnum or sth)
 	buildWord += nextChar;
-	return ""; //when defining, we dont want to return nothinf
+	return ""; //when naming, we want to return nothing
 }
 
 void MProc::addMacro(const string& macroName, const string& macroValue) {
