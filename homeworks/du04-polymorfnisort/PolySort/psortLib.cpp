@@ -2,36 +2,78 @@
 #include <string>
 #include <sstream>
 #include <print>
+#include <algorithm>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
 
+vector<string> PolySorter::splitString(const string& input, char sep) {
+	vector<string> returnVec;
+	string tempString = "";
+	for (size_t i = 0; i < input.length(); i++) {
+		if (input[i] != sep) {
+			tempString += input[i];
+		}
+		else {
+			returnVec.push_back(tempString);
+			tempString = "";
+		}
+	}
+	returnVec.push_back(tempString);
+	return returnVec;
+}
+
+
 void PolySorter::addRow(const string& rowString) {
 	polyContainer container;
-	string token;
-	istringstream tokenStream(rowString);
-	int i = 0;
-	while (getline(tokenStream, token, separator)) {
+	vector<string> chunks = splitString(rowString, separator);
+	if (firstRowAdjustment) {
+		while (chunks.size() > columnTypes.size()) {
+			columnTypes.push_back("string"); //matrix width is determined by first row, if its longer deduced from the types
+		}
+	}
+	else {
+		if (chunks.size() > columnTypes.size()) {
+			error = true;
+			cerr << "matrix is not rectangular";
+		}
+	}
+	for (size_t i = 0; i < chunks.size(); i++) {
 		if (columnTypes[i] == "string") { //here this is really ugly, but i didnt find a way to reliably convert string to all specific types
-			container.add(make_unique<Val<string>>(token));
+			container.add(make_unique<Val<string>>(chunks[i]));
 		}
 		if (columnTypes[i] == "int") {
-			container.add(make_unique<Val<int>>(stoi(token)));
+			try {
+				size_t pos;
+				int val = stoi(chunks[i], &pos);
+				if (pos != chunks[i].length()) { // check if we used the whole string
+					throw invalid_argument("Trailing characters");
+				}
+				container.add(make_unique<Val<int>>(val));
+			}
+			catch (const std::exception&) {
+				error = true;
+				cerr << "column type error";
+				break;
+			}
 		}
-		++i;
 	}
 	rowsDatabase.push_back(move(container));
+	firstRowAdjustment = false;
 }
 
 void PolySorter::printAll() { //maybe return the separators in the strings, that may need to modify toString
 	for (auto&& row : rowsDatabase) {
-		println("{}", row.toString());
+		println("{}", row.toString(string (1, separator)));
 	}
 }
 
+/**
 void PolySorter::setupColumnTypes(const vector<string>& clnTypes) {
 	for (auto&& element : clnTypes) {
 		int number = stoi(element.substr(1));
-		while (columnTypes.size() < number) {
+		while (columnTypes.size() < static_cast<size_t>(number)){ //wierd syntax, but recodex had some problems with signed/unsigned int comparison
 			columnTypes.push_back("string");
 		}
 		string identifier = element.substr(0, 1);
@@ -40,11 +82,105 @@ void PolySorter::setupColumnTypes(const vector<string>& clnTypes) {
 		}
 	}
 }
+**/
 
-void PolySorter::sort(const vector<int>& sortClnOrder) {
+void PolySorter::setupColumnTypes(const vector<string>& clnTypes) {
+	for (const auto& element : clnTypes) {
+		try {
+			// Kontrola délky (napø. "N" je moc krátké)
+			if (element.length() < 2) {
+				throw invalid_argument("Argument too short");
+			}
 
+			// Zkusíme pøeèíst èíslo. Pokud to není èíslo (napø. "-x"), stoi vyhodí výjimku.
+			string numPart = element.substr(1);
+			size_t pos;
+			int number = stoi(numPart, &pos);
+
+			// Kontrola, zda za èíslem není smetí (napø. "N1abc")
+			if (pos != numPart.length()) {
+				throw invalid_argument("Trailing garbage");
+			}
+
+			// Rozšíøení vektoru typù
+			while (columnTypes.size() < static_cast<size_t>(number)) {
+				columnTypes.push_back("string");
+			}
+
+			string identifier = element.substr(0, 1);
+			if (identifier == "N") {
+				columnTypes[number - 1] = "int";
+			}
+			// Zde pøípadnì další typy...
+
+		}
+		catch (...) {
+			// TADY JE KLÍÈ: Zachytíme chybu, nastavíme flag, ale NEPADNEME.
+			error = true;
+			cerr << "error: invalid column definition: " << element << endl;
+			return;
+		}
+	}
+}
+
+class polyComparator {
+public:
+	polyComparator(const vector<int>& sortClnOrder) : order(sortClnOrder) {}
+	bool operator()(const polyContainer& left, const polyContainer& right) const {
+		for (auto&& column : order) {
+			if ((*(left.polyVec[column - 1])) < (*(right.polyVec[column - 1]))) {
+				return true;
+			}
+			else {
+				if ((*(right.polyVec[column - 1])) < (*(left.polyVec[column - 1]))) {
+					return false;
+				}
+			}
+		}
+		return false; //if everything compared is the same
+	}
+
+private:
+	const vector<int>& order;
+};
+
+void PolySorter::sortDB(const vector<string>& sortClnOrderRaw) {
+	vector<int> sortClnOrder;
+	for (auto&& element : sortClnOrderRaw) {
+		int number = stoi(element.substr(1));
+		sortClnOrder.push_back(number);
+	}
+	sort(rowsDatabase.begin(), rowsDatabase.end(), polyComparator{ sortClnOrder });
 }
 
 void PolySorter::writeAllToFile(const string& path) {
+	ofstream outputFile(path);
 
+	if (!outputFile.is_open()) {
+		cerr << "error: Cannot open output file: " << path << endl;
+		error = true;
+		return;
+	}
+
+	for (auto&& row : rowsDatabase) {
+		outputFile << row.toString(string(1, separator)) << "\n";
+	}
+}
+
+void PolySorter::readRowsFromFile(const string& path) {
+	ifstream inputFile(path);
+
+	if (!inputFile.is_open()) {
+		cerr << "error: Cannot open input file: " << path << endl;
+		error = true;
+		return;
+	}
+
+	string line;
+	while (getline(inputFile, line)) {
+		addRow(line);
+		if (error) {
+			break;
+		}
+	}
 }

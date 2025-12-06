@@ -35,15 +35,17 @@ public:
 	void add(std::unique_ptr<AbstractVal> p) {
 		polyVec.push_back(std::move(p));
 	}
-	std::string toString() {
+	std::string toString(const std::string& sep) {
 		std::string rowString = "";
+		std::string elementsep = "";
 		for (auto&& element : polyVec) {
+			rowString.append(elementsep);
 			rowString.append(element->toString());
+			elementsep = sep;
 		}
 		return rowString;
 	}
-private:
-	std::vector<std::unique_ptr<AbstractVal>> polyVec;
+	std::vector<std::unique_ptr<AbstractVal>> polyVec;	
 };
 
 
@@ -54,13 +56,16 @@ public:
 	std::vector<polyContainer> rowsDatabase;
 	void setupColumnTypes(const std::vector<std::string>& clnTypes);
 	void addRow(const std::string& inputRow);
-	void sort(const std::vector<int>& sortClnOrder);
+	void sortDB(const std::vector<std::string>& sortClnOrderRaw);
 	void printAll();
 	void writeAllToFile(const std::string& path);
+	bool error = false;
+	void readRowsFromFile(const std::string& path);
 private:
-	int columnCount = -1; //for first row, to setup
+	int firstRowAdjustment = true;
 	char separator;
 	std::vector<std::string> columnTypes;
+	std::vector<std::string> splitString(const std::string& input, char sep);
 };
 
 #endif
