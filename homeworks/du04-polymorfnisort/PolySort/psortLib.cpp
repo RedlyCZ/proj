@@ -24,9 +24,8 @@ vector<string> PolySorter::splitString(const string& input, char sep) {
 	return returnVec;
 }
 
-
 void PolySorter::addRow(const string& rowString) {
-	polyContainer container;
+	PolyContainer container;
 	vector<string> chunks = splitString(rowString, separator);
 	if (firstRowAdjustment) {
 		while (chunks.size() > columnTypes.size()) {
@@ -69,40 +68,18 @@ void PolySorter::printAll() { //maybe return the separators in the strings, that
 	}
 }
 
-/**
-void PolySorter::setupColumnTypes(const vector<string>& clnTypes) {
-	for (auto&& element : clnTypes) {
-		int number = stoi(element.substr(1));
-		while (columnTypes.size() < static_cast<size_t>(number)){ //wierd syntax, but recodex had some problems with signed/unsigned int comparison
-			columnTypes.push_back("string");
-		}
-		string identifier = element.substr(0, 1);
-		if (identifier == "N") { //also pretty ugly but also hard to do otherway
-			columnTypes[number - 1] = "int";
-		}
-	}
-}
-**/
-
 void PolySorter::setupColumnTypes(const vector<string>& clnTypes) {
 	for (const auto& element : clnTypes) {
 		try {
-			// Kontrola délky (napø. "N" je moc krátké)
 			if (element.length() < 2) {
 				throw invalid_argument("Argument too short");
 			}
-
-			// Zkusíme pøeèíst èíslo. Pokud to není èíslo (napø. "-x"), stoi vyhodí výjimku.
 			string numPart = element.substr(1);
 			size_t pos;
 			int number = stoi(numPart, &pos);
-
-			// Kontrola, zda za èíslem není smetí (napø. "N1abc")
 			if (pos != numPart.length()) {
 				throw invalid_argument("Trailing garbage");
 			}
-
-			// Rozšíøení vektoru typù
 			while (columnTypes.size() < static_cast<size_t>(number)) {
 				columnTypes.push_back("string");
 			}
@@ -111,11 +88,11 @@ void PolySorter::setupColumnTypes(const vector<string>& clnTypes) {
 			if (identifier == "N") {
 				columnTypes[number - 1] = "int";
 			}
-			// Zde pøípadnì další typy...
+
+			//here more types if needed
 
 		}
 		catch (...) {
-			// TADY JE KLÍÈ: Zachytíme chybu, nastavíme flag, ale NEPADNEME.
 			error = true;
 			cerr << "error: invalid column definition: " << element << endl;
 			return;
@@ -126,7 +103,7 @@ void PolySorter::setupColumnTypes(const vector<string>& clnTypes) {
 class polyComparator {
 public:
 	polyComparator(const vector<int>& sortClnOrder) : order(sortClnOrder) {}
-	bool operator()(const polyContainer& left, const polyContainer& right) const {
+	bool operator()(const PolyContainer& left, const PolyContainer& right) const {
 		for (auto&& column : order) {
 			if ((*(left.polyVec[column - 1])) < (*(right.polyVec[column - 1]))) {
 				return true;

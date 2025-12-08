@@ -5,44 +5,28 @@
 
 using namespace std;
 
-/**
-int main(int argc, char ** argv) {
-	vector<string> args(argv + 1, argv + argc); //first without triggers only columns
-	string line;
-	PolySorter ps; //need to enable different separator
-	ps.setupColumnTypes(args);
-	while (getline(cin, line) && !ps.error){
-		ps.addRow(line);
-	}
-	if (!ps.error) {
-		ps.sortDB(args);
-		ps.printAll();
-	}
-}
-**/
-
 int main(int argc, char** argv) {
     string inputPath = "";
     string outputPath = "";
     char separator = ' ';
     vector<string> columnArgs;
 
-    for (int i = 1; i < argc; ++i) {
+    //args parsing
+    for (int i = 1; i < argc; ++i) { //this loop would be hard to decompose, it also reports errors and stops program if needed
         string arg = argv[i];
-
-        if (arg.rfind("-i", 0) == 0) { // Zaèíná na "-i"
+        if (arg.rfind("-i", 0) == 0) { //starts with -i
             if (arg.length() > 2) {
-                inputPath = arg.substr(2); // Je to "-isoubor.txt"
+                inputPath = arg.substr(2); //one arg structure without space
             }
             else if (i + 1 < argc) {
-                inputPath = argv[++i];     // Je to "-i soubor.txt"
+                inputPath = argv[++i];     //two arg structure, we read the second and then step over it
             }
             else {
                 cerr << "error: missing argument for -i" << endl;
                 return 1;
             }
         }
-        else if (arg.rfind("-o", 0) == 0) { // Zaèíná na "-o"
+        else if (arg.rfind("-o", 0) == 0) {
             if (arg.length() > 2) {
                 outputPath = arg.substr(2);
             }
@@ -54,7 +38,7 @@ int main(int argc, char** argv) {
                 return 1;
             }
         }
-        else if (arg.rfind("-s", 0) == 0) { // Zaèíná na "-s"
+        else if (arg.rfind("-s", 0) == 0) {
             if (arg.length() > 2) {
                 separator = arg[2];
             }
@@ -71,6 +55,8 @@ int main(int argc, char** argv) {
             columnArgs.push_back(arg);
         }
     }
+
+    //calling of library
     PolySorter ps(separator);
     ps.setupColumnTypes(columnArgs);
 

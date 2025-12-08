@@ -2,9 +2,10 @@
 #include <string>
 #include <memory>
 #include <sstream>
+#include <print>
 
-#ifndef mprocLib
-#define mprocLib
+#ifndef psortLib
+#define psortLib
 
 class AbstractVal {
 public:
@@ -30,7 +31,7 @@ private:
 	T x_;
 };
 
-class polyContainer {
+class PolyContainer {
 public:
 	void add(std::unique_ptr<AbstractVal> p) {
 		polyVec.push_back(std::move(p));
@@ -45,7 +46,7 @@ public:
 		}
 		return rowString;
 	}
-	std::vector<std::unique_ptr<AbstractVal>> polyVec;	
+	std::vector<std::unique_ptr<AbstractVal>> polyVec;
 };
 
 
@@ -53,7 +54,7 @@ public:
 class PolySorter {
 public:
 	PolySorter(char sep = ' ') : separator(sep) {}
-	std::vector<polyContainer> rowsDatabase;
+	std::vector<PolyContainer> rowsDatabase;
 	void setupColumnTypes(const std::vector<std::string>& clnTypes);
 	void addRow(const std::string& inputRow);
 	void sortDB(const std::vector<std::string>& sortClnOrderRaw);
@@ -66,6 +67,7 @@ private:
 	char separator;
 	std::vector<std::string> columnTypes;
 	std::vector<std::string> splitString(const std::string& input, char sep);
+
 };
 
 #endif
