@@ -11,14 +11,19 @@ int main() {
     std::cout << "========================================" << std::endl;
     std::cout << "Platforma: " << (sizeof(void*) == 8 ? "64-bit" : "32-bit") << std::endl;
 
-    // ZMENA: Pouzijeme bezpecne API (falesna data o produktech), 
-    // ktere Eduroam neblokuje.
-    std::string url = "https://dummyjson.com/products/1";
+    std::string apiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
+    std::string symbol = "SQM";
+    std::string url = "https://finnhub.io/api/v1/quote";
 
     std::cout << "\n[NETWORK] Stahuji data z: " << url << " ..." << std::endl;
 
-    // 1. Staení dat
-    cpr::Response r = cpr::Get(cpr::Url{ url });
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"symbol", symbol},
+            {"token", apiKey}
+        }
+    );
 
     if (r.status_code == 200) {
         std::cout << "[OK] Data uspesne stazena (" << r.text.length() << " bytu)." << std::endl;
@@ -27,18 +32,22 @@ int main() {
             // 2. Parsování JSON
             json data = json::parse(r.text);
 
-            // Vytahování dat z jineho formatu (DummyJSON)
-            std::string nazev = data["title"];
-            std::string popis = data["description"];
-            double cena = data["price"];
+            double price = data["c"];
+            double change = data["d"];
+            double percent = data["dp"];
 
-            std::cout << "\n----------------------------------------" << std::endl;
-            std::cout << " PRIJATA DATA (Test API)" << std::endl;
-            std::cout << "----------------------------------------" << std::endl;
-            std::cout << " Produkt: " << nazev << std::endl;
-            std::cout << " Cena:    $" << cena << std::endl;
-            std::cout << " Popis:   " << popis << std::endl;
-            std::cout << "----------------------------------------" << std::endl;
+            if (data.contains("c")) {
+                double price = data["c"];
+                double change = data["d"];
+                double percent = data["dp"];
+
+                std::cout << "Symbol: " << symbol << "\n";
+                std::cout << "Price:  $" << price << "\n";
+                std::cout << "Change: " << change << " (" << percent << "%)\n";
+            }
+            else {
+                std::cout << "API Error or Invalid Symbol.\n";
+            }
 
         }
         catch (const json::parse_error& e) {
