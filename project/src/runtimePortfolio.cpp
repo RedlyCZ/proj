@@ -10,34 +10,55 @@ using json = nlohmann::json;
 using namespace std;
 
 
-vector<instrumentPosition>::iterator RTPortfolio::findTicker(string newTicker, vector<instrumentPosition>& container) {
-	for (auto it = container.begin(); it != container.end(); it++) {
-		if (it->ticker == newTicker) {
-			return it;
+int RTPortfolio::findTickerIndex(const string& newTicker, vector<instrumentPosition>& container) {
+	for (int i = 0; i < container.size(); i++) {
+		if (container[i].ticker == newTicker) {
+			return i;
 		}
 	}
-	return container.end();
+	return -1;
 }
 
-void RTPortfolio::buyStock(string newTicker, double newQuantity) {
-	finnHubChannel apiSource;
-	double activePrice = apiSource.getActivePrice(newTicker);
+void RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, double newQuantity) {
+	double activePrice;
+	vector<instrumentPosition>* selectedContainer = nullptr;
+	switch(type) {
+	case instrumentType::STOCK: {
+		FinnHubChannel apiSource;
+		activePrice = apiSource.getActivePrice(newTicker);
+		selectedContainer = &stocks;
+		break;
+	}
+	case instrumentType::CASH: {
+		FrankfurterChannel apiSourceTwo;
+		activePrice = apiSourceTwo.conversionRate(newTicker);
+		selectedContainer = &cashes;
+		break;
+	}
+	case instrumentType::CRYPTO: {
+		CoinGeckoChannel apiSourceThree;
+		activePrice = apiSourceThree.getActivePrice(newTicker);
+		selectedContainer = &cryptos;
+		break;
+	}
+	}
 	if (activePrice < 0) {
 		cout << "Error 3, failed to load price\n";
 		return;
 	}
-	auto it = findTicker(newTicker, stocks);
-	if (it == stocks.end()) {
-		instrumentPosition newPos; //create new empty pos
-		newPos.positionType = instrumentType::STOCK;
+
+	int posIndex = findTickerIndex(newTicker, *selectedContainer);
+
+	if (posIndex == -1) {				//means ticker not present in vector
+		instrumentPosition newPos;
+		newPos.positionType = type;
 		newPos.ticker = newTicker;
 		newPos.quantity = newQuantity;
 		newPos.averageBuyPrice = activePrice;
-		stocks.push_back(newPos);
+		selectedContainer->push_back(newPos);
 	}
 	else {
-		instrumentPosition& editPos = *it;
-		double activePrice = activePrice;
+		instrumentPosition& editPos = (*selectedContainer)[posIndex];
 		double totalQuantity = editPos.quantity + newQuantity;
 		double totalInvested = (editPos.quantity * editPos.averageBuyPrice) + (newQuantity * activePrice);
 		editPos.averageBuyPrice = totalInvested / totalQuantity;

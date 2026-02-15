@@ -6,9 +6,20 @@
 #ifndef API_MIDDLEMAN
 #define API_MIDDLEMAN
 
-class finnHubChannel {
+class FinnHubChannel {
 public:
-	double getActivePrice(std::string ticker);
+	double getActivePrice(const std::string& ticker);
+};
+
+
+class FrankfurterChannel {
+public:
+	double conversionRate(const std::string& baseCurrency, const std::string& targetCurrency = "USD");
+};
+
+class CoinGeckoChannel {
+public:
+	double getActivePrice(const std::string& cryptoName);
 };
 
 

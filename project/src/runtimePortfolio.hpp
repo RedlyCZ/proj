@@ -33,12 +33,10 @@ private:
 	std::vector<instrumentPosition> cryptos;
 	std::array<int, supportedTypesCount> valueByClasses;
 	double totalValue;
-	std::vector<instrumentPosition>::iterator findTicker(std::string newTicker, std::vector<instrumentPosition>& container);
+	int findTickerIndex(const std::string& newTicker, std::vector<instrumentPosition>& container);
 
 public:
-	void buyStock(std::string newTicker, double newQuantity);
-	void buyCash(std::string newTicker, double newQuantity);
-	void buyCrypto(std::string newTicker, double newQuantity);
+	void buyInstrument(instrumentType type, const std::string& newTicker, double newQuantity);
 	void loadActivePrices();
 	void loadActiveYields();
 	void printAllPositions();
