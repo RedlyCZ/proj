@@ -79,7 +79,6 @@ double CoinGeckoChannel::getActivePrice(const string& cryptoName) {
             {"vs_currencies", "usd"}
         }
     );
-
     if (r.status_code == 200) {
         json data = json::parse(r.text);
         if (data.contains(cryptoName) && data[cryptoName].contains("usd")) {
