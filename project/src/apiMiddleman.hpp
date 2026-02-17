@@ -33,5 +33,10 @@ public:
 	double getInterestRate(const std::string& ticker); 
 };
 
+class CnbChannel {
+public:
+	double getCzechInterestRate();
+};
+
 
 #endif

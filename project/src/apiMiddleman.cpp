@@ -148,22 +148,17 @@ double ApiNinjasChannel::getInterestRate(const string& ticker) {
     );
 
     if (r.status_code == 200) {
-        try {
-            json data = json::parse(r.text);
-            if (data.is_array() && !data.empty()) {
-                if (data[0].contains("rate_pct")) {
-                    return data[0]["rate_pct"];
-                }
-            }
-            else if (data.contains("rate_pct")) {
-                return data["rate_pct"];
-            }
-            else {
-                cout << "Error 11 - Interest rate not found in response - apininja\n";
+        json data = json::parse(r.text);
+        if (data.is_array() && !data.empty()) {
+            if (data[0].contains("rate_pct")) {
+                return data[0]["rate_pct"];
             }
         }
-        catch (const std::exception& e) {
-            cout << "Error 12 - JSON parse error - apininja \n";
+        else if (data.contains("rate_pct")) {
+            return data["rate_pct"];
+        }
+        else {
+            cout << "Error 11 - Interest rate not found in response - apininja\n";
         }
     }
     else {
@@ -196,4 +191,51 @@ string ApiNinjasChannel::resolveCentralBankName(const string& ticker) {
 
     //if there is some unknown thing, return the currency ticker
     return ticker;
+}
+
+
+//Direct connection to cnb API, cause our national bank is not so important to be mapped by bigger APIs
+
+double CnbChannel::getCzechInterestRate() {
+    string url = "https://api.cnb.cz/cnbapi/pribor";
+
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"lang", "EN"}
+        }
+    );
+
+    if (r.status_code == 200) {
+        json data = json::parse(r.text);
+
+        if (data.contains("pribor") && !data["pribor"].empty()) {
+            json& dailyData = data["pribor"][0];
+
+            if (dailyData.contains("cells") && dailyData.contains("values")) {
+                json& cells = dailyData["cells"];
+                json& values = dailyData["values"];
+
+                if (cells.size() == values.size()) {
+                    for (size_t i = 0; i < cells.size(); ++i) {
+                        string cellName = cells[i];
+                        if (cellName == "2W" || cellName == "2T") {
+                            return values[i];
+                        }
+                    }
+                    if (!values.empty()) return values[0];
+                }
+            }
+        }
+        else if (data.is_array() && !data.empty()) {
+        }
+        else {
+            cout << "Error 14 - CNB Data empty or invalid format\n";
+        }
+    }
+    else {
+        cout << "Error 16 - CNB request failed\n";
+    }
+
+    return -1.0;
 }
