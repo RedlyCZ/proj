@@ -2,16 +2,22 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <unordered_map>
+#include <algorithm>
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 using namespace std;
 
+//apikeys (im sure they are safe here)
+constexpr string finnhubApiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
+constexpr string twelveDataApiKey = "4818bbe7eae44f9f9953f16e09e15398";
+constexpr string apiNinjaApiKey = "edYYHgdoAENWYD8N1i9k2rWLmlN5QtXPHU4zO3dY";
 
 //FinnHub, free API 60 calls per minute, used for stock data
 
-constexpr string finnhubApiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
+
 
 double FinnHubChannel::getActivePrice(const string& ticker) {
     string url = "https://finnhub.io/api/v1/quote";
@@ -92,4 +98,102 @@ double CoinGeckoChannel::getActivePrice(const string& cryptoName) {
         cout << "Error 7 - CoinGecko getActivePrice\n";
     }
     return -1;
+}
+
+
+//TwelveData, free API 800 calls per minute, used for some advanced stock data
+double TwelveDataChannel::getStockDividend(const string& ticker) {
+    string url = "https://api.twelvedata.com/dividends";
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"symbol", ticker},
+            {"apikey", twelveDataApiKey}
+        }
+    );
+    if (r.status_code == 200) {
+        json data = json::parse(r.text);
+        if (data.contains("dividends") && !data["dividends"].empty()) {
+            if (data["dividends"][0].contains("amount")) {
+                return data["dividends"][0]["amount"];
+            }
+        }
+        else {
+            return 0.0; //no dividends found for this stock
+        }
+    }
+    else {
+        cout << "Error 10 - loading dividend problem twelvedatachannel\n";
+    }
+    return -1.0;
+}
+
+
+
+//ApiNinja - free api tier with 3000 queries per month. Used for current central bank interest rates.
+
+double ApiNinjasChannel::getInterestRate(const string& ticker) {
+    string properName = resolveCentralBankName(ticker); //becasue the api works with full central bank name
+
+    string url = "https://api.api-ninjas.com/v1/interestrate";
+
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"name", properName}
+        },
+        cpr::Header{
+            {"X-Api-Key", apiNinjaApiKey}
+        }
+    );
+
+    if (r.status_code == 200) {
+        try {
+            json data = json::parse(r.text);
+            if (data.is_array() && !data.empty()) {
+                if (data[0].contains("rate_pct")) {
+                    return data[0]["rate_pct"];
+                }
+            }
+            else if (data.contains("rate_pct")) {
+                return data["rate_pct"];
+            }
+            else {
+                cout << "Error 11 - Interest rate not found in response - apininja\n";
+            }
+        }
+        catch (const std::exception& e) {
+            cout << "Error 12 - JSON parse error - apininja \n";
+        }
+    }
+    else {
+        cout << "Error 13 - ApiNinjas request failed\n";
+    }
+    return -1.0;
+}
+
+string ApiNinjasChannel::resolveCentralBankName(const string& ticker) {
+    static const std::unordered_map<string, string> bankMap = {
+        {"USD", "United States Federal Reserve"},
+        {"EUR", "European Central Bank"},
+        {"GBP", "Bank of England"},
+        {"JPY", "Bank of Japan"},
+        {"CAD", "Bank of Canada"},
+        {"AUD", "Reserve Bank of Australia"},
+        {"CHF", "Swiss National Bank"},
+        {"CNY", "People's Bank of China"},
+        {"NZD", "Reserve Bank of New Zealand"},
+        {"INR", "Reserve Bank of India"},
+        {"BRL", "Central Bank of Brazil"},
+        {"RUB", "Central Bank of the Russian Federation"},
+        {"ZAR", "South African Reserve Bank"}
+    };
+
+    auto it = bankMap.find(ticker);
+    if (it != bankMap.end()) {
+        return it->second;
+    }
+
+    //if there is some unknown thing, return the currency ticker
+    return ticker;
 }

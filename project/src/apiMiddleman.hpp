@@ -11,7 +11,6 @@ public:
 	double getActivePrice(const std::string& ticker);
 };
 
-
 class FrankfurterChannel {
 public:
 	double conversionRate(const std::string& baseCurrency, const std::string& targetCurrency = "USD");
@@ -20,6 +19,18 @@ public:
 class CoinGeckoChannel {
 public:
 	double getActivePrice(const std::string& cryptoName);
+};
+
+class TwelveDataChannel {
+public:
+	double getStockDividend(const std::string& ticker);
+};
+
+class ApiNinjasChannel {
+private:
+	std::string resolveCentralBankName(const std::string& ticker); //for conversion currencyticker -> centralbankname
+public:
+	double getInterestRate(const std::string& ticker); 
 };
 
 
