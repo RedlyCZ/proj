@@ -23,6 +23,6 @@ set(BUILD_CPR_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git GIT_TAG 1.11.0)
 FetchContent_MakeAvailable(cpr)
 
-add_executable(financialAnalyzer main.cpp)
+add_executable(financialAnalyzer main.cpp apiMiddleman.cpp)
 
 target_link_libraries(financialAnalyzer PRIVATE nlohmann_json::nlohmann_json cpr::cpr)

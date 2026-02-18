@@ -6,6 +6,9 @@
 #ifndef API_MIDDLEMAN
 #define API_MIDDLEMAN
 
+
+//direct specific API abstractions
+
 class FinnHubChannel {
 public:
 	double getActivePrice(const std::string& ticker);
@@ -26,16 +29,51 @@ public:
 	double getStockDividend(const std::string& ticker);
 };
 
-class ApiNinjasChannel {
+class FredChannel {
 private:
-	std::string resolveCentralBankName(const std::string& ticker); //for conversion currencyticker -> centralbankname
+	std::string resolveSeriesId(const std::string& ticker);
 public:
-	double getInterestRate(const std::string& ticker); 
+	double getInterestRate(const std::string& ticker);
 };
 
 class CnbChannel {
 public:
 	double getCzechInterestRate();
+};
+
+
+//generalized abstractions of instrument types
+
+class stockDataChannel {
+public:
+	double getActivePrice(const std::string& ticker) {
+		FinnHubChannel apisrc;
+		return apisrc.getActivePrice(ticker);
+	}
+	double getActiveDividend(const std::string& ticker) {
+		TwelveDataChannel apisrc;
+		return apisrc.getStockDividend(ticker);
+	}
+};
+
+class cashDataChannel {
+public:
+	double getConversionRate(const std::string& ticker) {
+		FrankfurterChannel apisrc;
+		return apisrc.conversionRate(ticker);
+	}
+	double getInterestRate(const std::string& ticker) {
+			FredChannel fredApiSrc;
+			return fredApiSrc.getInterestRate(ticker);
+	}
+};
+
+class cryptoDataChannel {
+public:
+	double getActivePrice(const std::string& cryptoName) {
+		CoinGeckoChannel apisrc;
+		return apisrc.getActivePrice(cryptoName);
+	}
 };
 
 

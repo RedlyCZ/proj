@@ -1,64 +1,61 @@
 #include <iostream>
 #include <string>
-#include <cpr/cpr.h>
-#include <nlohmann/json.hpp>
+#include "apiMiddleman.hpp"
 
-using json = nlohmann::json;
-
-int main() {
-    std::cout << "========================================" << std::endl;
-    std::cout << "   FINANCIAL ANALYZER - TECH DEMO v0.1  " << std::endl;
-    std::cout << "========================================" << std::endl;
-    std::cout << "Platforma: " << (sizeof(void*) == 8 ? "64-bit" : "32-bit") << std::endl;
-
-    std::string apiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
-    std::string symbol = "SQM";
-    std::string url = "https://finnhub.io/api/v1/quote";
-
-    std::cout << "\n[NETWORK] Stahuji data z: " << url << " ..." << std::endl;
-
-    cpr::Response r = cpr::Get(
-        cpr::Url{ url },
-        cpr::Parameters{
-            {"symbol", symbol},
-            {"token", apiKey}
-        }
-    );
-
-    if (r.status_code == 200) {
-        std::cout << "[OK] Data uspesne stazena (" << r.text.length() << " bytu)." << std::endl;
-
-        try {
-            // 2. Parsování JSON
-            json data = json::parse(r.text);
-
-            double price = data["c"];
-            double change = data["d"];
-            double percent = data["dp"];
-
-            if (data.contains("c")) {
-                double price = data["c"];
-                double change = data["d"];
-                double percent = data["dp"];
-
-                std::cout << "Symbol: " << symbol << "\n";
-                std::cout << "Price:  $" << price << "\n";
-                std::cout << "Change: " << change << " (" << percent << "%)\n";
-            }
-            else {
-                std::cout << "API Error or Invalid Symbol.\n";
-            }
-
-        }
-        catch (const json::parse_error& e) {
-            std::cerr << "[CHYBA] Nepodarilo se zpracovat JSON: " << e.what() << std::endl;
-        }
-
+// Helper function to print results cleanly
+void printResult(const std::string& testName, double value, const std::string& unit = "") {
+    std::cout << "TEST: " << testName << "\n";
+    if (value == -1.0) {
+        std::cout << "RESULT: [ERROR] API returned -1\n";
     }
     else {
-        std::cerr << "[CHYBA] Server vratil kod: " << r.status_code << std::endl;
-        std::cerr << "Detail chyby: " << r.error.message << std::endl;
+        std::cout << "RESULT: " << value << " " << unit << "\n";
     }
+    std::cout << "----------------------------------------\n";
+}
 
+int main() {
+    std::cout << "========================================\n";
+    std::cout << "    API MIDDLEMAN INTERFACE TESTER      \n";
+    std::cout << "========================================\n\n";
+
+    // 1. Test Stock Data Channel
+    // Wraps FinnHub (Price) and TwelveData (Dividend)
+    std::cout << "[ StockDataChannel ]\n";
+    stockDataChannel stockChannel;
+
+    // Test 1: Get Stock Price (FinnHub) -> Using Apple (AAPL)
+    printResult("Stock Price (AAPL)", stockChannel.getActivePrice("AAPL"), "USD");
+
+    // Test 2: Get Stock Dividend (TwelveData) -> Using Apple (AAPL)
+    // Note: If this returns 0, it might mean no recent dividend or API limit, 
+    // but -1 indicates a connection/parsing error.
+    printResult("Stock Dividend (AAPL)", stockChannel.getActiveDividend("AAPL"), "USD");
+
+
+    std::cout << "\n[ CashDataChannel ]\n";
+    cashDataChannel cashChannel;
+
+    // Test 3: Get Forex Rate (Frankfurter) -> EUR to USD
+    // The library defaults target to USD if not specified
+    printResult("Forex Rate (EUR -> USD)", cashChannel.getConversionRate("EUR"), "USD");
+
+    // Test 4: Get Global Interest Rate (ApiNinjas) -> USD (Fed)
+    // This tests the logic that resolves "USD" to "United States Federal Reserve"
+    printResult("Interest Rate (USD - Fed)", cashChannel.getInterestRate("USD"), "%");
+
+    // Test 5: Get specific CZK Interest Rate (CNB Custom Implementation)
+    // The library explicitly checks for "CZK" to switch to CnbChannel
+    printResult("Interest Rate (CZK - PRIBOR)", cashChannel.getInterestRate("CZK"), "%");
+
+
+    std::cout << "\n[ CryptoDataChannel ]\n";
+    cryptoDataChannel cryptoChannel;
+
+    // Test 6: Get Crypto Price (CoinGecko)
+    // CoinGecko requires the full ID (e.g., "bitcoin") not the ticker ("BTC")
+    printResult("Crypto Price (Bitcoin)", cryptoChannel.getActivePrice("bitcoin"), "USD");
+
+    std::cout << "\nTests Complete.\n";
     return 0;
 }

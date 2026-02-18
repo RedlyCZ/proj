@@ -4,6 +4,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
+#include <ctime>
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 
@@ -11,13 +12,13 @@ using json = nlohmann::json;
 using namespace std;
 
 //apikeys (im sure they are safe here)
-constexpr string finnhubApiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
-constexpr string twelveDataApiKey = "4818bbe7eae44f9f9953f16e09e15398";
-constexpr string apiNinjaApiKey = "edYYHgdoAENWYD8N1i9k2rWLmlN5QtXPHU4zO3dY";
+const string finnhubApiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
+const string twelveDataApiKey = "4818bbe7eae44f9f9953f16e09e15398";
+const string apiNinjaApiKey = "edYYHgdoAENWYD8N1i9k2rWLmlN5QtXPHU4zO3dY";
+const string fredApiKey = "bd4aa411be07e1d514736502aabfe3a6";
+
 
 //FinnHub, free API 60 calls per minute, used for stock data
-
-
 
 double FinnHubChannel::getActivePrice(const string& ticker) {
     string url = "https://finnhub.io/api/v1/quote";
@@ -129,80 +130,99 @@ double TwelveDataChannel::getStockDividend(const string& ticker) {
 }
 
 
+//FRED API - St. Louis Fed. Free, high limits. Best for Interest Rates.
 
-//ApiNinja - free api tier with 3000 queries per month. Used for current central bank interest rates.
+double FredChannel::getInterestRate(const string& ticker) {
+    string seriesId = resolveSeriesId(ticker);
 
-double ApiNinjasChannel::getInterestRate(const string& ticker) {
-    string properName = resolveCentralBankName(ticker); //becasue the api works with full central bank name
+    if (seriesId.empty()) {
+        cout << "Error 20 - FRED: Currency/Country not mapped for interest rate.\n";
+        return -1.0;
+    }
 
-    string url = "https://api.api-ninjas.com/v1/interestrate";
+    string url = "https://api.stlouisfed.org/fred/series/observations";
 
     cpr::Response r = cpr::Get(
         cpr::Url{ url },
         cpr::Parameters{
-            {"name", properName}
-        },
-        cpr::Header{
-            {"X-Api-Key", apiNinjaApiKey}
+            {"series_id", seriesId},
+            {"api_key", fredApiKey},
+            {"file_type", "json"},
+            {"sort_order", "desc"}, // Get latest first
+            {"limit", "1"}          // Only need the latest
         }
     );
 
     if (r.status_code == 200) {
-        json data = json::parse(r.text);
-        if (data.is_array() && !data.empty()) {
-            if (data[0].contains("rate_pct")) {
-                return data[0]["rate_pct"];
+        try {
+            json data = json::parse(r.text);
+            if (data.contains("observations") && !data["observations"].empty()) {
+                // FRED returns values as strings ("5.33"), so we must convert
+                string valStr = data["observations"][0]["value"];
+
+                // FRED returns "." if data is missing for that specific date
+                if (valStr == ".") {
+                    cout << "Error 21 - FRED: Data point is missing/incomplete.\n";
+                    return -1.0;
+                }
+
+                return stod(valStr);
             }
         }
-        else if (data.contains("rate_pct")) {
-            return data["rate_pct"];
-        }
-        else {
-            cout << "Error 11 - Interest rate not found in response - apininja\n";
+        catch (const std::exception& e) {
+            cout << "Error 22 - FRED parsing error: " << e.what() << "\n";
         }
     }
     else {
-        cout << "Error 13 - ApiNinjas request failed\n";
+        cout << "Error 23 - FRED request failed. Status: " << r.status_code << "\n";
     }
     return -1.0;
 }
 
-string ApiNinjasChannel::resolveCentralBankName(const string& ticker) {
+string FredChannel::resolveSeriesId(const string& ticker) {
+    // Map tickers to FRED Series IDs
     static const std::unordered_map<string, string> bankMap = {
-        {"USD", "United States Federal Reserve"},
-        {"EUR", "European Central Bank"},
-        {"GBP", "Bank of England"},
-        {"JPY", "Bank of Japan"},
-        {"CAD", "Bank of Canada"},
-        {"AUD", "Reserve Bank of Australia"},
-        {"CHF", "Swiss National Bank"},
-        {"CNY", "People's Bank of China"},
-        {"NZD", "Reserve Bank of New Zealand"},
-        {"INR", "Reserve Bank of India"},
-        {"BRL", "Central Bank of Brazil"},
-        {"RUB", "Central Bank of the Russian Federation"},
-        {"ZAR", "South African Reserve Bank"}
+        {"USD", "FEDFUNDS"},       // Federal Funds Effective Rate
+        {"EUR", "ECBDFR"},         // ECB Deposit Facility Rate
+        {"GBP", "BOERUKM"},        // Bank of England Official Bank Rate
+        {"JPY", "IRSTCI01JPM156N"},// Japan Call Rate (overnight)
+        {"CAD", "IRSTCI01CAM156N"},// Canada Overnight
+        {"CHF", "IRSTCI01CHM156N"},// Swiss SARON/Overnight
+        {"AUD", "IRSTCI01AUM156N"}, // Australia Cash Rate
+        { "CZK", "IRSTCI01CZM156N"} //czech repo rate
     };
 
     auto it = bankMap.find(ticker);
     if (it != bankMap.end()) {
         return it->second;
     }
-
-    //if there is some unknown thing, return the currency ticker
-    return ticker;
+    return "";
 }
+
 
 
 //Direct connection to cnb API, cause our national bank is not so important to be mapped by bigger APIs
 
 double CnbChannel::getCzechInterestRate() {
-    string url = "https://api.cnb.cz/cnbapi/pribor";
+    string url = "https://api.cnb.cz/cnbapi/pribor/daily";
+
+    time_t t = time(nullptr);
+    tm now = *localtime(&t);
+
+    // Go back 3 days in seconds (3 * 24 * 60 * 60 = 259200)
+    // This ensures we don't hit the 48h delay wall or weekends
+    time_t past_t = t - 259200;
+    tm past = *localtime(&past_t);
+
+    std::ostringstream dateStream;
+    dateStream << std::put_time(&past, "%Y-%m-%d");
+    std::string validDate = dateStream.str();
 
     cpr::Response r = cpr::Get(
         cpr::Url{ url },
         cpr::Parameters{
-            {"lang", "EN"}
+            {"lang", "EN"},
+            {"date", validDate}
         }
     );
 
@@ -210,27 +230,11 @@ double CnbChannel::getCzechInterestRate() {
         json data = json::parse(r.text);
 
         if (data.contains("pribor") && !data["pribor"].empty()) {
-            json& dailyData = data["pribor"][0];
+            json& latestData = data["pribor"].back();
 
-            if (dailyData.contains("cells") && dailyData.contains("values")) {
-                json& cells = dailyData["cells"];
-                json& values = dailyData["values"];
-
-                if (cells.size() == values.size()) {
-                    for (size_t i = 0; i < cells.size(); ++i) {
-                        string cellName = cells[i];
-                        if (cellName == "2W" || cellName == "2T") {
-                            return values[i];
-                        }
-                    }
-                    if (!values.empty()) return values[0];
-                }
+            if (latestData.contains("values") && !latestData["values"].empty()) {
+                return latestData["values"][0];
             }
-        }
-        else if (data.is_array() && !data.empty()) {
-        }
-        else {
-            cout << "Error 14 - CNB Data empty or invalid format\n";
         }
     }
     else {
