@@ -16,6 +16,7 @@ const string finnhubApiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
 const string twelveDataApiKey = "4818bbe7eae44f9f9953f16e09e15398";
 const string apiNinjaApiKey = "edYYHgdoAENWYD8N1i9k2rWLmlN5QtXPHU4zO3dY";
 const string fredApiKey = "bd4aa411be07e1d514736502aabfe3a6";
+const string fmpApiKey = "Dgolm4HnDmWEvMhJQ19rCsUhzL4KmR6R";
 
 
 //FinnHub, free API 60 calls per minute, used for stock data
@@ -102,35 +103,75 @@ double CoinGeckoChannel::getActivePrice(const string& cryptoName) {
 }
 
 
-//TwelveData, free API 800 calls per minute, used for some advanced stock data
-double TwelveDataChannel::getStockDividend(const string& ticker) {
-    string url = "https://api.twelvedata.com/dividends";
+//Financial Modeling Prep, free API 250 calls per day, used for some advanced stock data (like divi)
+double FinancialModelingPrepChannel::getStockDividend(const string& ticker) {
+    string url = "https://financialmodelingprep.com/stable/dividends";
+
     cpr::Response r = cpr::Get(
         cpr::Url{ url },
         cpr::Parameters{
             {"symbol", ticker},
-            {"apikey", twelveDataApiKey}
+            {"apikey", fmpApiKey}
         }
     );
+
     if (r.status_code == 200) {
         json data = json::parse(r.text);
-        if (data.contains("dividends") && !data["dividends"].empty()) {
-            if (data["dividends"][0].contains("amount")) {
-                return data["dividends"][0]["amount"];
+
+        if (data.is_array() && !data.empty()) {
+
+            double amount = data[0].value("dividend", 0.0);
+
+            string frequency = data[0].value("frequency", "Annual");
+
+            int payoutsPerYear = 1;
+
+            transform(frequency.begin(), frequency.end(), frequency.begin(), [](unsigned char c) { return tolower(c); });
+
+            if (frequency == "quarterly" || frequency == "quarter") {
+                payoutsPerYear = 4;
             }
+            else if (frequency == "monthly" || frequency == "month") {
+                payoutsPerYear = 12;
+            }
+            else if (frequency == "semi-annual" || frequency == "semiannual" || frequency == "semi-annually") {
+                payoutsPerYear = 2;
+            }
+
+            return amount * payoutsPerYear;
         }
         else {
-            return 0.0; //no dividends found for this stock
+            return 0.0;
         }
     }
     else {
-        cout << "Error 10 - loading dividend problem twelvedatachannel\n";
+        cout << "Error 10 - Loading dividend problem FinancialModelingPrepChannel\n";
     }
     return -1.0;
 }
 
-
 //FRED API - St. Louis Fed. Free, high limits. Best for Interest Rates.
+
+string FredChannel::resolveSeriesId(const string& ticker) {
+    // Map tickers to FRED Series IDs
+    static const std::unordered_map<string, string> bankMap = {
+        {"USD", "FEDFUNDS"},       // Federal Funds Effective Rate
+        {"EUR", "ECBDFR"},         // ECB Deposit Facility Rate
+        {"GBP", "BOERUKM"},        // Bank of England Official Bank Rate
+        {"JPY", "IRSTCI01JPM156N"},// Japan Call Rate (overnight)
+        {"CAD", "IRSTCI01CAM156N"},// Canada Overnight
+        {"CHF", "IRSTCI01CHM156N"},// Swiss SARON/Overnight
+        {"AUD", "IRSTCI01AUM156N"}, // Australia Cash Rate
+        { "CZK", "IRSTCI01CZM156N"} //czech repo rate
+    };
+
+    auto it = bankMap.find(ticker);
+    if (it != bankMap.end()) {
+        return it->second;
+    }
+    return "";
+}
+
 
 double FredChannel::getInterestRate(const string& ticker) {
     string seriesId = resolveSeriesId(ticker);
@@ -179,25 +220,7 @@ double FredChannel::getInterestRate(const string& ticker) {
     return -1.0;
 }
 
-string FredChannel::resolveSeriesId(const string& ticker) {
-    // Map tickers to FRED Series IDs
-    static const std::unordered_map<string, string> bankMap = {
-        {"USD", "FEDFUNDS"},       // Federal Funds Effective Rate
-        {"EUR", "ECBDFR"},         // ECB Deposit Facility Rate
-        {"GBP", "BOERUKM"},        // Bank of England Official Bank Rate
-        {"JPY", "IRSTCI01JPM156N"},// Japan Call Rate (overnight)
-        {"CAD", "IRSTCI01CAM156N"},// Canada Overnight
-        {"CHF", "IRSTCI01CHM156N"},// Swiss SARON/Overnight
-        {"AUD", "IRSTCI01AUM156N"}, // Australia Cash Rate
-        { "CZK", "IRSTCI01CZM156N"} //czech repo rate
-    };
 
-    auto it = bankMap.find(ticker);
-    if (it != bankMap.end()) {
-        return it->second;
-    }
-    return "";
-}
 
 
 

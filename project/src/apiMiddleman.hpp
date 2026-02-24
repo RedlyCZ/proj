@@ -24,7 +24,7 @@ public:
 	double getActivePrice(const std::string& cryptoName);
 };
 
-class TwelveDataChannel {
+class FinancialModelingPrepChannel {
 public:
 	double getStockDividend(const std::string& ticker);
 };
@@ -44,31 +44,31 @@ public:
 
 //generalized abstractions of instrument types
 
-class stockDataChannel {
+class StockDataChannel {
 public:
 	double getActivePrice(const std::string& ticker) {
 		FinnHubChannel apisrc;
 		return apisrc.getActivePrice(ticker);
 	}
 	double getActiveDividend(const std::string& ticker) {
-		TwelveDataChannel apisrc;
+		FinancialModelingPrepChannel apisrc;
 		return apisrc.getStockDividend(ticker);
 	}
 };
 
-class cashDataChannel {
+class CashDataChannel {
 public:
 	double getConversionRate(const std::string& ticker) {
 		FrankfurterChannel apisrc;
 		return apisrc.conversionRate(ticker);
 	}
 	double getInterestRate(const std::string& ticker) {
-			FredChannel fredApiSrc;
-			return fredApiSrc.getInterestRate(ticker);
+		FredChannel fredApiSrc;
+		return fredApiSrc.getInterestRate(ticker);
 	}
 };
 
-class cryptoDataChannel {
+class CryptoDataChannel {
 public:
 	double getActivePrice(const std::string& cryptoName) {
 		CoinGeckoChannel apisrc;

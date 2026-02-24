@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "apiMiddleman.hpp"
+#include "runtimePortfolio.hpp"
 
 // Helper function to print results cleanly
 void printResult(const std::string& testName, double value, const std::string& unit = "") {
@@ -14,48 +15,47 @@ void printResult(const std::string& testName, double value, const std::string& u
     std::cout << "----------------------------------------\n";
 }
 
-int main() {
+void testApi() {
     std::cout << "========================================\n";
     std::cout << "    API MIDDLEMAN INTERFACE TESTER      \n";
     std::cout << "========================================\n\n";
-
-    // 1. Test Stock Data Channel
-    // Wraps FinnHub (Price) and TwelveData (Dividend)
+    
     std::cout << "[ StockDataChannel ]\n";
-    stockDataChannel stockChannel;
-
-    // Test 1: Get Stock Price (FinnHub) -> Using Apple (AAPL)
+    StockDataChannel stockChannel;
     printResult("Stock Price (AAPL)", stockChannel.getActivePrice("AAPL"), "USD");
-
-    // Test 2: Get Stock Dividend (TwelveData) -> Using Apple (AAPL)
-    // Note: If this returns 0, it might mean no recent dividend or API limit, 
-    // but -1 indicates a connection/parsing error.
     printResult("Stock Dividend (AAPL)", stockChannel.getActiveDividend("AAPL"), "USD");
-
-
+    
     std::cout << "\n[ CashDataChannel ]\n";
-    cashDataChannel cashChannel;
-
-    // Test 3: Get Forex Rate (Frankfurter) -> EUR to USD
-    // The library defaults target to USD if not specified
+    CashDataChannel cashChannel;
     printResult("Forex Rate (EUR -> USD)", cashChannel.getConversionRate("EUR"), "USD");
-
-    // Test 4: Get Global Interest Rate (ApiNinjas) -> USD (Fed)
-    // This tests the logic that resolves "USD" to "United States Federal Reserve"
     printResult("Interest Rate (USD - Fed)", cashChannel.getInterestRate("USD"), "%");
-
-    // Test 5: Get specific CZK Interest Rate (CNB Custom Implementation)
-    // The library explicitly checks for "CZK" to switch to CnbChannel
     printResult("Interest Rate (CZK - PRIBOR)", cashChannel.getInterestRate("CZK"), "%");
-
-
+    
     std::cout << "\n[ CryptoDataChannel ]\n";
-    cryptoDataChannel cryptoChannel;
-
-    // Test 6: Get Crypto Price (CoinGecko)
-    // CoinGecko requires the full ID (e.g., "bitcoin") not the ticker ("BTC")
+    CryptoDataChannel cryptoChannel;
     printResult("Crypto Price (Bitcoin)", cryptoChannel.getActivePrice("bitcoin"), "USD");
-
+    
     std::cout << "\nTests Complete.\n";
+}
+
+void testRTPortfolioBasic() {
+    RTPortfolio pfOne;
+    pfOne.buyInstrument(instrumentType::STOCK, "AAPL", 5);
+    pfOne.buyInstrument(instrumentType::STOCK, "GOOGL", 5);
+    pfOne.buyInstrument(instrumentType::CASH, "EUR", 100);
+    pfOne.buyInstrument(instrumentType::CASH, "GBP", 50);
+    pfOne.buyInstrument(instrumentType::CRYPTO, "ethereum", 0.01);
+    pfOne.buyInstrument(instrumentType::CRYPTO, "bitcoin", 0.1);
+    pfOne.loadActivePrices();
+    pfOne.loadActiveYields();
+    pfOne.printAllPositions();
+}
+
+int main() {
+    //testApi();
+
+
+    testRTPortfolioBasic();
+    
     return 0;
 }

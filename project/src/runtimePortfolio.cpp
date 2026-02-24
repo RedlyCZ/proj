@@ -10,7 +10,7 @@ using json = nlohmann::json;
 using namespace std;
 
 
-int RTPortfolio::findTickerIndex(const string& newTicker, vector<instrumentPosition>& container) {
+int RTPortfolio::findTickerIndex(const string& newTicker, const vector<instrumentPosition>& container) {
 	for (int i = 0; i < container.size(); i++) {
 		if (container[i].ticker == newTicker) {
 			return i;
@@ -20,24 +20,24 @@ int RTPortfolio::findTickerIndex(const string& newTicker, vector<instrumentPosit
 }
 
 double RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, double newQuantity) {
-	double activePrice;
+	double activePrice = 0;
 	vector<instrumentPosition>* selectedContainer = nullptr;
 	switch(type) {
 	case instrumentType::STOCK: {
-		FinnHubChannel apiSource;
-		activePrice = apiSource.getActivePrice(newTicker);
+		StockDataChannel stockApi;
+		activePrice = stockApi.getActivePrice(newTicker);
 		selectedContainer = &stocks;
 		break;
 	}
 	case instrumentType::CASH: {
-		FrankfurterChannel apiSourceTwo;
-		activePrice = apiSourceTwo.conversionRate(newTicker);
+		CashDataChannel cashApi;
+		activePrice = cashApi.getConversionRate(newTicker);
 		selectedContainer = &cashes;
 		break;
 	}
 	case instrumentType::CRYPTO: {
-		CoinGeckoChannel apiSourceThree;
-		activePrice = apiSourceThree.getActivePrice(newTicker);
+		CryptoDataChannel cryptoApi;
+		activePrice = cryptoApi.getActivePrice(newTicker);
 		selectedContainer = &cryptos;
 		break;
 	}
@@ -73,20 +73,20 @@ double RTPortfolio::sellInstrument(instrumentType type, const string& newTicker,
 	vector<instrumentPosition>* selectedContainer = nullptr;
 	switch (type) {
 	case instrumentType::STOCK: {
-		FinnHubChannel apiSource;
-		activePrice = apiSource.getActivePrice(newTicker);
+		StockDataChannel stockApi;
+		activePrice = stockApi.getActivePrice(newTicker);
 		selectedContainer = &stocks;
 		break;
 	}
 	case instrumentType::CASH: {
-		FrankfurterChannel apiSourceTwo;
-		activePrice = apiSourceTwo.conversionRate(newTicker);
+		CashDataChannel cashApi;
+		activePrice = cashApi.getConversionRate(newTicker);
 		selectedContainer = &cashes;
 		break;
 	}
 	case instrumentType::CRYPTO: {
-		CoinGeckoChannel apiSourceThree;
-		activePrice = apiSourceThree.getActivePrice(newTicker);
+		CryptoDataChannel cryptoApi;
+		activePrice = cryptoApi.getActivePrice(newTicker);
 		selectedContainer = &cryptos;
 		break;
 	}
@@ -123,7 +123,7 @@ double RTPortfolio::sellInstrument(instrumentType type, const string& newTicker,
 
 
 void RTPortfolio::loadActivePricesStocks() {
-	FinnHubChannel apiSource;
+	StockDataChannel apiSource;
 	for (size_t i = 0; i < stocks.size(); i++) {
 		instrumentPosition& loadPos = stocks[i];
 		loadPos.activePrice = apiSource.getActivePrice(loadPos.ticker);
@@ -131,18 +131,18 @@ void RTPortfolio::loadActivePricesStocks() {
 }
 
 void RTPortfolio::loadActivePricesCash() {
-	FrankfurterChannel apiSource;
+	CashDataChannel apiSource;
 	for (size_t i = 0; i < cashes.size(); i++) {
 		instrumentPosition& loadPos = cashes[i];
-		loadPos.activePrice = apiSource.conversionRate(loadPos.ticker);
+		loadPos.activePrice = apiSource.getConversionRate(loadPos.ticker);
 	}
 }
 
 void RTPortfolio::loadActivePricesCrypto() {
-	CoinGeckoChannel apiSource;
-	for (size_t i = 0; i < cashes.size(); i++) {
+	CryptoDataChannel apiSource;
+	for (size_t i = 0; i < cryptos.size(); i++) {
 		instrumentPosition& loadPos = cryptos[i];
-		loadPos.activePrice = apiSource.conversionRate(loadPos.ticker);
+		loadPos.activePrice = apiSource.getActivePrice(loadPos.ticker);
 	}
 }
 
@@ -150,6 +150,45 @@ void RTPortfolio::loadActivePrices() {
 	loadActivePricesStocks();
 	loadActivePricesCash();
 	loadActivePricesCrypto();
+}
+
+void RTPortfolio::loadActiveYieldsStocks() {
+	StockDataChannel apiSource;
+	for (size_t i = 0; i < stocks.size(); i++) {
+		instrumentPosition& loadPos = stocks[i];
+		loadPos.yield = apiSource.getActiveDividend(loadPos.ticker) / apiSource.getActivePrice(loadPos.ticker); //annualized divi / price = divirate
+	}
+}
+
+void RTPortfolio::loadActiveYieldsCash() {
+	CashDataChannel apiSource;
+	for (size_t i = 0; i < cashes.size(); i++) {
+		instrumentPosition& loadPos = cashes[i];
+		loadPos.yield = apiSource.getInterestRate(loadPos.ticker);
+	}
+}
+
+void RTPortfolio::loadActiveYields() {
+	loadActiveYieldsStocks();
+	loadActiveYieldsCash();
+}
+
+void RTPortfolio::printAllPositions() {
+	cout << "Complete portfolio print\n";
+	cout << "Stocks:\n";
+	for (size_t i = 0; i < stocks.size(); i++) {
+		cout << "Ticker: " << stocks[i].ticker << " Active Price: " << stocks[i].activePrice << " Active Yield: " << stocks[i].yield << " Quantity: " << stocks[i].quantity << "\n";
+	}
+
+	cout << "Crypto:\n";
+	for (size_t i = 0; i < cryptos.size(); i++) {
+		cout << "Name: " << cryptos[i].ticker << " Active Price: " << cryptos[i].activePrice << " Quantity: " << cryptos[i].quantity << "\n";
+	}
+
+	cout << "Cashes:\n";
+	for (size_t i = 0; i < cashes.size(); i++) {
+		cout << "Ticker: " << cashes[i].ticker << " Active Price: " << cashes[i].activePrice << " Active Yield: " << cashes[i].yield << " Quantity: " << cashes[i].quantity << "\n";
+	}
 }
 
 
