@@ -44,8 +44,8 @@ void testRTPortfolioBasic() {
     pfOne.buyInstrument(instrumentType::STOCK, "GOOGL", 5);
     pfOne.buyInstrument(instrumentType::CASH, "EUR", 100);
     pfOne.buyInstrument(instrumentType::CASH, "GBP", 50);
-    pfOne.buyInstrument(instrumentType::CRYPTO, "ethereum", 0.01);
-    pfOne.buyInstrument(instrumentType::CRYPTO, "bitcoin", 0.1);
+    pfOne.buyInstrument(instrumentType::CRYPTO, "ETH", 0.01);
+    pfOne.buyInstrument(instrumentType::CRYPTO, "BTC", 0.1);
     pfOne.loadActivePrices();
     pfOne.loadActiveYields();
     pfOne.printAllPositions();

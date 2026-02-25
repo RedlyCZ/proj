@@ -7,6 +7,9 @@
 #include <ctime>
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
+#include <thread>
+#include <chrono>
+
 
 using json = nlohmann::json;
 using namespace std;
@@ -75,29 +78,36 @@ double FrankfurterChannel::conversionRate(const string& baseCurrency, const stri
 
 
 
-//CoinGecko, free API 30 calls per minute, used for crypto data
-//kinda hate them, cause they dont use tickers, but fullname
+// Binance API, free, no auth required for basic prices, 1200 calls per minute
+// Uses tickers (e.g., BTC, ETH) paired with USDT
 
-double CoinGeckoChannel::getActivePrice(const string& cryptoName) {
-    string url = "https://api.coingecko.com/api/v3/simple/price";
+double BinanceChannel::getActivePrice(const string& ticker) {
+    // Append USDT to the ticker (e.g., BTC -> BTCUSDT)
+    string symbol = ticker + "USDT";
+
+    transform(symbol.begin(), symbol.end(), symbol.begin(), ::toupper);
+
+    string url = "https://api.binance.com/api/v3/ticker/price";
+
     cpr::Response r = cpr::Get(
         cpr::Url{ url },
         cpr::Parameters{
-            {"ids", cryptoName},
-            {"vs_currencies", "usd"}
+            {"symbol", symbol}
         }
     );
+
     if (r.status_code == 200) {
         json data = json::parse(r.text);
-        if (data.contains(cryptoName) && data[cryptoName].contains("usd")) {
-            return data[cryptoName]["usd"];
+        if (data.contains("price")) {
+            string priceStr = data["price"];
+            return stod(priceStr);
         }
         else {
-            cout << "Error 6 - CoinGecko getActivePrice\n";
+            cout << "Error - Binance price key missing\n";
         }
     }
     else {
-        cout << "Error 7 - CoinGecko getActivePrice\n";
+        cout << "Error - Binance getActivePrice failed with status: " << r.status_code << "\n";
     }
     return -1;
 }

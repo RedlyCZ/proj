@@ -19,7 +19,7 @@ public:
 	double conversionRate(const std::string& baseCurrency, const std::string& targetCurrency = "USD");
 };
 
-class CoinGeckoChannel {
+class BinanceChannel{
 public:
 	double getActivePrice(const std::string& cryptoName);
 };
@@ -71,7 +71,7 @@ public:
 class CryptoDataChannel {
 public:
 	double getActivePrice(const std::string& cryptoName) {
-		CoinGeckoChannel apisrc;
+		BinanceChannel apisrc;
 		return apisrc.getActivePrice(cryptoName);
 	}
 };
