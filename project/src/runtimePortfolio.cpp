@@ -46,6 +46,10 @@ double RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, 
 		cout << "Error 3, failed to load price, buying\n";
 		return 0;
 	}
+	if (selectedContainer == nullptr) {
+		cout << "Error, invalid instrument type\n";
+		return 0;
+	}
 
 	int posIndex = findTickerIndex(newTicker, *selectedContainer);
 
@@ -93,6 +97,10 @@ double RTPortfolio::sellInstrument(instrumentType type, const string& newTicker,
 	}
 	if (activePrice < 0) {
 		cout << "Error 3, failed to load price, selling\n";
+		return 0;
+	}
+	if (selectedContainer == nullptr) {
+		cout << "Error, invalid instrument type\n";
 		return 0;
 	}
 

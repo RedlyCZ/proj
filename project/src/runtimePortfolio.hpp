@@ -10,7 +10,7 @@
 
 constexpr int supportedTypesCount = 3;
 
-enum class instrumentType {
+enum instrumentType {
 	STOCK,
 	CASH,
 	CRYPTO
@@ -18,12 +18,12 @@ enum class instrumentType {
 
 struct instrumentPosition {
 public:
-	instrumentType positionType;
-	std::string ticker;
-	double quantity;
-	double activePrice;
-	double yield;
-	double averageBuyPrice;
+	instrumentType positionType{ instrumentType::STOCK };
+	std::string ticker = "";
+	double quantity = 0.0;
+	double activePrice = 0.0;
+	double yield = 0.0;
+	double averageBuyPrice = 0.0;
 };
 
 class RTPortfolio {
