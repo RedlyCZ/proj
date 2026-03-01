@@ -69,7 +69,7 @@ double RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, 
 }
 
 double RTPortfolio::sellInstrument(instrumentType type, const string& newTicker, double newQuantity, bool closePosition) {
-	double activePrice;
+	double activePrice = 0;
 	vector<instrumentPosition>* selectedContainer = nullptr;
 	switch (type) {
 	case instrumentType::STOCK: {
@@ -122,55 +122,102 @@ double RTPortfolio::sellInstrument(instrumentType type, const string& newTicker,
 }
 
 
-void RTPortfolio::loadActivePricesStocks() {
+bool RTPortfolio::loadActivePricesStocks() {
 	StockDataChannel apiSource;
 	for (size_t i = 0; i < stocks.size(); i++) {
 		instrumentPosition& loadPos = stocks[i];
-		loadPos.activePrice = apiSource.getActivePrice(loadPos.ticker);
+		double loadedVal = apiSource.getActivePrice(loadPos.ticker);
+		if (loadedVal < 0) {
+			cout << "Error, failed to load stock price\n";
+			return false;
+		}
+		else {
+			loadPos.activePrice = loadedVal;
+		}
 	}
+	return true;
 }
 
-void RTPortfolio::loadActivePricesCash() {
+bool RTPortfolio::loadActivePricesCash() {
 	CashDataChannel apiSource;
 	for (size_t i = 0; i < cashes.size(); i++) {
 		instrumentPosition& loadPos = cashes[i];
-		loadPos.activePrice = apiSource.getConversionRate(loadPos.ticker);
+		double loadedVal = apiSource.getConversionRate(loadPos.ticker);
+		if (loadedVal < 0) {
+			cout << "Error, failed to load cash price\n";
+			return false;
+		}
+		else {
+			loadPos.activePrice = loadedVal;
+		}
 	}
+	return true;
 }
 
-void RTPortfolio::loadActivePricesCrypto() {
+bool RTPortfolio::loadActivePricesCrypto() {
 	CryptoDataChannel apiSource;
 	for (size_t i = 0; i < cryptos.size(); i++) {
 		instrumentPosition& loadPos = cryptos[i];
-		loadPos.activePrice = apiSource.getActivePrice(loadPos.ticker);
+		double loadedVal = apiSource.getActivePrice(loadPos.ticker);
+		if (loadedVal < 0) {
+			cout << "Error, failed to load cash price\n";
+			return false;
+		}
+		else {
+			loadPos.activePrice = loadedVal;
+		}
+	}
+	return true;
+}
+
+bool RTPortfolio::loadActivePrices() {
+	if (loadActivePricesStocks() && loadActivePricesCash() && loadActivePricesCrypto()) {	//if even one of them false, return false as failed
+		return true;
+	}
+	else {
+		return false;
 	}
 }
 
-void RTPortfolio::loadActivePrices() {
-	loadActivePricesStocks();
-	loadActivePricesCash();
-	loadActivePricesCrypto();
-}
-
-void RTPortfolio::loadActiveYieldsStocks() {
+bool RTPortfolio::loadActiveYieldsStocks() {
 	StockDataChannel apiSource;
 	for (size_t i = 0; i < stocks.size(); i++) {
 		instrumentPosition& loadPos = stocks[i];
-		loadPos.yield = apiSource.getActiveDividend(loadPos.ticker) / apiSource.getActivePrice(loadPos.ticker); //annualized divi / price = divirate
+		double loadedVal = apiSource.getActiveDividend(loadPos.ticker) / apiSource.getActivePrice(loadPos.ticker); //annualized divi/price = divirate
+		if (loadedVal < 0) {
+			cout << "Error, failed to load stock yield\n";
+			return false;
+		}
+		else {
+			loadPos.yield = loadedVal;
+		}
 	}
+	return true;
 }
 
-void RTPortfolio::loadActiveYieldsCash() {
+bool RTPortfolio::loadActiveYieldsCash() {
 	CashDataChannel apiSource;
 	for (size_t i = 0; i < cashes.size(); i++) {
 		instrumentPosition& loadPos = cashes[i];
-		loadPos.yield = apiSource.getInterestRate(loadPos.ticker);
+		double loadedVal = apiSource.getInterestRate(loadPos.ticker);
+		if (loadedVal < 0) {
+			cout << "Error, failed to load interest rate\n";
+			return false;
+		}
+		else {
+			loadPos.yield = loadedVal;
+		}
 	}
+	return true;
 }
 
-void RTPortfolio::loadActiveYields() {
-	loadActiveYieldsStocks();
-	loadActiveYieldsCash();
+bool RTPortfolio::loadActiveYields() {
+	if (loadActiveYieldsStocks() && loadActiveYieldsCash()) {	// if even one is false, whole loading was false
+		return true;
+	}
+	else {
+		return false;
+	}
 }
 
 void RTPortfolio::printAllPositions() {
