@@ -31,8 +31,8 @@ private:
 	std::vector<instrumentPosition> stocks;
 	std::vector<instrumentPosition> cashes;
 	std::vector<instrumentPosition> cryptos;
-	std::array<int, supportedTypesCount> valueByClasses;
-	double totalValue;
+	std::array<int, supportedTypesCount> valueByClasses{};
+	double totalValue = 0;
 	int findTickerIndex(const std::string& newTicker, const std::vector<instrumentPosition>& container);
 	bool loadActivePricesStocks(); //return false if api failed
 	bool loadActivePricesCash();
