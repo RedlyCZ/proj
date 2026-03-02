@@ -27,9 +27,6 @@ public:
 
 class RTPortfolio {
 private:
-	std::vector<instrumentPosition> stocks;
-	std::vector<instrumentPosition> cashes;
-	std::vector<instrumentPosition> cryptos;
 	std::array<int, supportedTypesCount> valueByClasses{};
 	double totalValue = 0;
 	int findTickerIndex(const std::string& newTicker, const std::vector<instrumentPosition>& container);
@@ -40,6 +37,9 @@ private:
 	bool loadActiveYieldsCash();
 
 public:
+	std::vector<instrumentPosition> stocks;
+	std::vector<instrumentPosition> cashes;
+	std::vector<instrumentPosition> cryptos;
 	double buyInstrument(instrumentType type, const std::string& newTicker, double newQuantity);							//returns price spent
 	double sellInstrument(instrumentType type, const std::string& newTicker, double newQuantity, bool closePosition);		//returns price recieved
 	bool loadActivePrices();	//return false if loading failed

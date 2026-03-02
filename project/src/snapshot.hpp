@@ -26,18 +26,21 @@ struct PortfolioToSave {
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PositionToSave, ticker, quantity, yield, avgBuyPrice, thenPrice)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PortfolioToSave, stocks, cryptos, cashes)
+
 
 class Snapshoter {
 private:
 	std::string storagePath;
 	bool folderExists();
+	std::string currentDate();
 public:
 	Snapshoter(const std::string& _storagePath) {
 		storagePath = _storagePath;
 	}
-	bool writeSnapshot(RTPortfolio portfolio);		//false if failed
-	RTPortfolio readSnapshot(std::chrono::year_month_day searchedDate);
-	void deleteSnapshot(std::string snapshotName);
+	bool writeSnapshot(const RTPortfolio& portfolio);							//false if failed
+	RTPortfolio readSnapshot(const std::chrono::year_month_day& searchedDate);
+	void deleteSnapshot(const std::string& snapshotName);
 };
 
 
