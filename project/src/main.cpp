@@ -2,6 +2,7 @@
 #include <string>
 #include "apiMiddleman.hpp"
 #include "runtimePortfolio.hpp"
+#include "snapshot.hpp"
 
 // Helper function to print results cleanly
 void printResult(const std::string& testName, double value, const std::string& unit = "") {

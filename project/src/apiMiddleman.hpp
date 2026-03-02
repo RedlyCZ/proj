@@ -36,11 +36,6 @@ public:
 	double getInterestRate(const std::string& ticker);
 };
 
-class CnbChannel {
-public:
-	double getCzechInterestRate();
-};
-
 
 //generalized abstractions of instrument types
 //exception that it catches is usually the one you get when you run out of tokens, but it returning -1 signalises a problem in general

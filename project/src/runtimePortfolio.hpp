@@ -2,7 +2,6 @@
 #include <string>
 #include <array>
 
-
 #ifndef RUNTIME_PORTFOLIO
 #define RUNTIME_PORTFOLIO
 
