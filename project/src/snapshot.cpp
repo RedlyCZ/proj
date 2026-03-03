@@ -25,6 +25,17 @@ bool Snapshoter::folderExists() {
     }
 }
 
+bool Snapshoter::createStorage() {          //false if failed
+    fs::path relativePath = storagePath;
+    try {
+        fs::create_directories(relativePath);
+    }
+    catch(...){                     //creating folder failed
+        return false;
+    }
+    return true;
+}
+
 string Snapshoter::currentDate() {
     auto now = chrono::system_clock::now();
     std::chrono::year_month_day current_date{ std::chrono::floor<std::chrono::days>(now) };
@@ -32,7 +43,13 @@ string Snapshoter::currentDate() {
 }
 
 bool Snapshoter::writeSnapshot(const RTPortfolio& portfolio) {                  //false if failed
-    ofstream out_file(storagePath);
+    if (!folderExists()) {
+        if (!createStorage()) {             //we dont have folder and its creation failed
+            return false;
+        }
+    }
+    string snapshotPath = storagePath + "/" + currentDate();              //we use the date as unique name for the snapshot
+    ofstream out_file(snapshotPath);
     if (!out_file) {
         std::cout << "Error: Could not open the file for writing.\n";
         return false;
@@ -53,5 +70,8 @@ bool Snapshoter::writeSnapshot(const RTPortfolio& portfolio) {                  
     out_file << j.dump(4);
 
     return true;
+}
+
+RTPortfolio Snapshoter::readSnapshot(const chrono::year_month_day& searchedDate) {
 
 }

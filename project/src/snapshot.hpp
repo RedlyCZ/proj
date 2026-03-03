@@ -33,6 +33,7 @@ class Snapshoter {
 private:
 	std::string storagePath;
 	bool folderExists();
+	bool createStorage();			//false if failed
 	std::string currentDate();
 public:
 	Snapshoter(const std::string& _storagePath) {
