@@ -1,15 +1,15 @@
+#ifndef RUNTIME_PORTFOLIO
+#define RUNTIME_PORTFOLIO
+
 #include <vector>
 #include <string>
 #include <array>
-
-#ifndef RUNTIME_PORTFOLIO
-#define RUNTIME_PORTFOLIO
 
 //definition of active types
 
 constexpr int supportedTypesCount = 3;
 
-enum instrumentType {
+enum class instrumentType {
 	STOCK,
 	CASH,
 	CRYPTO

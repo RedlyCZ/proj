@@ -38,8 +38,8 @@ bool Snapshoter::createStorage() {          //false if failed
 
 string Snapshoter::currentDate() {
     auto now = chrono::system_clock::now();
-    std::chrono::year_month_day current_date{ std::chrono::floor<std::chrono::days>(now) };
-    return std::format("{}", current_date);
+    chrono::year_month_day current_date{ std::chrono::floor<std::chrono::days>(now) };
+    return format("{}", current_date);
 }
 
 bool Snapshoter::writeSnapshot(const RTPortfolio& portfolio) {                  //false if failed
@@ -48,7 +48,7 @@ bool Snapshoter::writeSnapshot(const RTPortfolio& portfolio) {                  
             return false;
         }
     }
-    string snapshotPath = storagePath + "/" + currentDate();              //we use the date as unique name for the snapshot
+    std::filesystem::path snapshotPath = std::filesystem::path(storagePath) / currentDate();        //we use the date as unique name for the snapshot 
     ofstream out_file(snapshotPath);
     if (!out_file) {
         std::cout << "Error: Could not open the file for writing.\n";
@@ -72,6 +72,47 @@ bool Snapshoter::writeSnapshot(const RTPortfolio& portfolio) {                  
     return true;
 }
 
-RTPortfolio Snapshoter::readSnapshot(const chrono::year_month_day& searchedDate) {
+optional<RTPortfolio> Snapshoter::readSnapshot(const chrono::year_month_day& searchedDate) {
+    string stringDate = format("{}", searchedDate); //bit ineffective here, but one string doesnt kill anyone
+    std::filesystem::path snapshotPath = std::filesystem::path(storagePath) / stringDate;
+    if(!folderExists() || !fs::exists(snapshotPath)) {
+        return nullopt;
+    }
+    ifstream readFile(snapshotPath);
+    json snapshotJSON;
+    try {
+        snapshotJSON = json::parse(readFile);
+        PortfolioToSave pfRead = snapshotJSON.get<PortfolioToSave>();
+        RTPortfolio pfReturn;
+        for (auto&& savedPos : pfRead.stocks) {
+            pfReturn.stocks.push_back({ instrumentType::STOCK, savedPos.ticker, savedPos.quantity, savedPos.thenPrice, savedPos.yield, savedPos.avgBuyPrice });
+        }
 
+        for (auto&& savedPos : pfRead.cryptos) {
+            pfReturn.cryptos.push_back({ instrumentType::CRYPTO, savedPos.ticker, savedPos.quantity, savedPos.thenPrice, savedPos.yield, savedPos.avgBuyPrice });
+        }
+
+        for (auto&& savedPos : pfRead.cashes) {
+            pfReturn.cashes.push_back({ instrumentType::CASH, savedPos.ticker, savedPos.quantity, savedPos.thenPrice, savedPos.yield, savedPos.avgBuyPrice });
+        }
+        return pfReturn;
+    }
+    catch (...) {
+        return nullopt;
+    }
+}
+
+bool Snapshoter::deleteSnapshot(const std::chrono::year_month_day& deleteDate) {
+    string stringDate = format("{}", deleteDate); //bit ineffective here, but one string doesnt kill anyone
+    string snapshotPath = storagePath + "/" + stringDate;
+    if (!folderExists() || !fs::exists(snapshotPath)) {
+        return true;                                        //although deleting the file "failed", there is no snapshot now, so we return it as success
+    }
+    try {
+        fs::remove(snapshotPath);
+        return true;
+    }
+    catch (...) { //deleting failed
+        return false;
+    }
 }

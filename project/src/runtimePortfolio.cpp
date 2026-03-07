@@ -1,10 +1,12 @@
 #include "runtimePortfolio.hpp"
 #include "apiMiddleman.hpp"
+#include "snapshot.hpp"
 #include <vector>
 #include <string>
 #include <array>
 #include <iostream>
 #include <nlohmann/json.hpp>
+
 
 using json = nlohmann::json;
 using namespace std;

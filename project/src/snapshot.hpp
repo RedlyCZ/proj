@@ -1,3 +1,6 @@
+#ifndef SNAPSHOT
+#define SNAPSHOT
+
 #include <string>
 #include <vector>
 #include "runtimePortfolio.hpp"
@@ -5,18 +8,15 @@
 #include <iostream>
 #include <filesystem>
 #include <chrono>
-
-
-#ifndef SNAPSHOT
-#define SNAPSHOT
+#include <optional>
 
 //custom made for converting data into json before saving
 struct PositionToSave {
 	std::string ticker;
-	double quantity;
-	double yield;
-	double avgBuyPrice;
-	double thenPrice;
+	double quantity = 0;
+	double yield = 0;
+	double avgBuyPrice = 0;
+	double thenPrice = 0;
 };
 
 struct PortfolioToSave {
@@ -40,8 +40,8 @@ public:
 		storagePath = _storagePath;
 	}
 	bool writeSnapshot(const RTPortfolio& portfolio);							//false if failed
-	RTPortfolio readSnapshot(const std::chrono::year_month_day& searchedDate);
-	void deleteSnapshot(const std::string& snapshotName);
+	std::optional<RTPortfolio> readSnapshot(const std::chrono::year_month_day& searchedDate);		//returns nullopt if snapshot not found
+	bool deleteSnapshot(const std::chrono::year_month_day& deleteDate);
 };
 
 
