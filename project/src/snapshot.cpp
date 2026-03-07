@@ -8,9 +8,6 @@
 #include <chrono>
 #include <format>
 #include <fstream>
-#include <iostream>
-#include <string>
-#include <filesystem>
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -54,18 +51,11 @@ bool Snapshoter::writeSnapshot(const RTPortfolio& portfolio) {                  
         std::cout << "Error: Could not open the file for writing.\n";
         return false;
     }
-    PortfolioToSave pfWrite;
-    for (auto&& pos : portfolio.stocks) {
-        pfWrite.stocks.push_back({ pos.ticker, pos.quantity, pos.yield, pos.averageBuyPrice, pos.activePrice });
-    }
-    for (auto&& pos : portfolio.cryptos) {
-        pfWrite.cryptos.push_back({ pos.ticker, pos.quantity, pos.yield, pos.averageBuyPrice, pos.activePrice });
-    }
-    for (auto&& pos : portfolio.cashes) {
-        pfWrite.cashes.push_back({ pos.ticker, pos.quantity, pos.yield, pos.averageBuyPrice, pos.activePrice });
-    }
 
-    json j = pfWrite;
+    json j;
+    j["stocks"] = portfolio.stocks;
+    j["cryptos"] = portfolio.cryptos;
+    j["cashes"] = portfolio.cashes;
 
     out_file << j.dump(4);
 
@@ -79,22 +69,14 @@ optional<RTPortfolio> Snapshoter::readSnapshot(const chrono::year_month_day& sea
         return nullopt;
     }
     ifstream readFile(snapshotPath);
-    json snapshotJSON;
     try {
-        snapshotJSON = json::parse(readFile);
-        PortfolioToSave pfRead = snapshotJSON.get<PortfolioToSave>();
+        json snapshotJSON = json::parse(readFile);
         RTPortfolio pfReturn;
-        for (auto&& savedPos : pfRead.stocks) {
-            pfReturn.stocks.push_back({ instrumentType::STOCK, savedPos.ticker, savedPos.quantity, savedPos.thenPrice, savedPos.yield, savedPos.avgBuyPrice });
-        }
 
-        for (auto&& savedPos : pfRead.cryptos) {
-            pfReturn.cryptos.push_back({ instrumentType::CRYPTO, savedPos.ticker, savedPos.quantity, savedPos.thenPrice, savedPos.yield, savedPos.avgBuyPrice });
-        }
-
-        for (auto&& savedPos : pfRead.cashes) {
-            pfReturn.cashes.push_back({ instrumentType::CASH, savedPos.ticker, savedPos.quantity, savedPos.thenPrice, savedPos.yield, savedPos.avgBuyPrice });
-        }
+        pfReturn.stocks = snapshotJSON.at("stocks").get<std::vector<instrumentPosition>>();
+        pfReturn.cryptos = snapshotJSON.at("cryptos").get<std::vector<instrumentPosition>>();
+        pfReturn.cashes = snapshotJSON.at("cashes").get<std::vector<instrumentPosition>>();
+        
         return pfReturn;
     }
     catch (...) {
@@ -104,7 +86,7 @@ optional<RTPortfolio> Snapshoter::readSnapshot(const chrono::year_month_day& sea
 
 bool Snapshoter::deleteSnapshot(const std::chrono::year_month_day& deleteDate) {
     string stringDate = format("{}", deleteDate); //bit ineffective here, but one string doesnt kill anyone
-    string snapshotPath = storagePath + "/" + stringDate;
+    std::filesystem::path snapshotPath = std::filesystem::path(storagePath) / stringDate;
     if (!folderExists() || !fs::exists(snapshotPath)) {
         return true;                                        //although deleting the file "failed", there is no snapshot now, so we return it as success
     }

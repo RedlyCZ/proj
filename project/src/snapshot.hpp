@@ -1,5 +1,5 @@
-#ifndef SNAPSHOT
-#define SNAPSHOT
+#ifndef SNAPSHOT_HPP
+#define SNAPSHOT_HPP
 
 #include <string>
 #include <vector>
@@ -10,23 +10,7 @@
 #include <chrono>
 #include <optional>
 
-//custom made for converting data into json before saving
-struct PositionToSave {
-	std::string ticker;
-	double quantity = 0;
-	double yield = 0;
-	double avgBuyPrice = 0;
-	double thenPrice = 0;
-};
-
-struct PortfolioToSave {
-	std::vector<PositionToSave> stocks;
-	std::vector<PositionToSave> cryptos;
-	std::vector<PositionToSave> cashes;
-};
-
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PositionToSave, ticker, quantity, yield, avgBuyPrice, thenPrice)
-NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PortfolioToSave, stocks, cryptos, cashes)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(instrumentPosition, positionType, ticker, quantity, activePrice, yield, averageBuyPrice)
 
 
 class Snapshoter {
