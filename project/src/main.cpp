@@ -52,11 +52,27 @@ void testRTPortfolioBasic() {
     pfOne.printAllPositions();
 }
 
+void testSnapshoter() {
+    RTPortfolio pf;
+    pf.buyInstrument(instrumentType::STOCK, "AAPL", 5);
+    pf.buyInstrument(instrumentType::STOCK, "GOOGL", 5);
+    pf.buyInstrument(instrumentType::CASH, "EUR", 100);
+    pf.buyInstrument(instrumentType::CASH, "GBP", 50);
+    pf.buyInstrument(instrumentType::CRYPTO, "ETH", 0.01);
+    pf.buyInstrument(instrumentType::CRYPTO, "BTC", 0.1);
+    pf.loadActivePrices();
+    pf.loadActiveYields();
+    pf.setStoragePath("snapshots");
+    pf.saveSnapshot();
+}
+
 int main() {
     //testApi();
 
 
     //testRTPortfolioBasic();
     
+
+    testSnapshoter();
     return 0;
 }

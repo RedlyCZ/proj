@@ -249,3 +249,11 @@ void RTPortfolio::printAllPositions() {
 }
 
 
+bool RTPortfolio::saveSnapshot() {
+	Snapshoter snp(storagePath);
+	if (snp.writeSnapshot(*this)) {
+		return true;
+	}
+	return false;
+}
+

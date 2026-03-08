@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <array>
+#include <chrono>
 
 //definition of active types
 
@@ -35,16 +36,21 @@ private:
 	bool loadActivePricesCrypto();
 	bool loadActiveYieldsStocks();
 	bool loadActiveYieldsCash();
-
 public:
 	std::vector<instrumentPosition> stocks;
 	std::vector<instrumentPosition> cashes;
 	std::vector<instrumentPosition> cryptos;
+	std::string storagePath;
+	void setStoragePath(const std::string& path) {
+		storagePath = path;
+	}
 	double buyInstrument(instrumentType type, const std::string& newTicker, double newQuantity);							//returns price spent
 	double sellInstrument(instrumentType type, const std::string& newTicker, double newQuantity, bool closePosition);		//returns price recieved
 	bool loadActivePrices();	//return false if loading failed
 	bool loadActiveYields();
 	void printAllPositions();
+	bool saveSnapshot();
+	bool loadSnapshot(std::chrono::year_month_day searchedDate);
 };
 
 
