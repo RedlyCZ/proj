@@ -28,8 +28,6 @@ public:
 
 class RTPortfolio {
 private:
-	std::array<int, supportedTypesCount> valueByClasses{};
-	double totalValue = 0;
 	int findTickerIndex(const std::string& newTicker, const std::vector<instrumentPosition>& container);
 	bool loadActivePricesStocks(); //return false if api failed
 	bool loadActivePricesCash();
@@ -48,7 +46,6 @@ public:
 	double sellInstrument(instrumentType type, const std::string& newTicker, double newQuantity, bool closePosition);		//returns price recieved
 	bool loadActivePrices();	//return false if loading failed
 	bool loadActiveYields();
-	void printAllPositions();
 	bool saveSnapshot();
 	bool loadSnapshot(std::chrono::year_month_day searchedDate);
 };

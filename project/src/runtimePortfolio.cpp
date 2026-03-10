@@ -230,25 +230,6 @@ bool RTPortfolio::loadActiveYields() {
 	}
 }
 
-void RTPortfolio::printAllPositions() {
-	cout << "Complete portfolio print\n";
-	cout << "Stocks:\n";
-	for (size_t i = 0; i < stocks.size(); i++) {
-		cout << "Ticker: " << stocks[i].ticker << " Active Price: " << stocks[i].activePrice << " Active Yield: " << stocks[i].yield << " Quantity: " << stocks[i].quantity << "\n";
-	}
-
-	cout << "Crypto:\n";
-	for (size_t i = 0; i < cryptos.size(); i++) {
-		cout << "Name: " << cryptos[i].ticker << " Active Price: " << cryptos[i].activePrice << " Quantity: " << cryptos[i].quantity << "\n";
-	}
-
-	cout << "Cashes:\n";
-	for (size_t i = 0; i < cashes.size(); i++) {
-		cout << "Ticker: " << cashes[i].ticker << " Active Price: " << cashes[i].activePrice << " Active Yield: " << cashes[i].yield << " Quantity: " << cashes[i].quantity << "\n";
-	}
-}
-
-
 bool RTPortfolio::saveSnapshot() {
 	Snapshoter snp(storagePath);
 	if (snp.writeSnapshot(*this)) {

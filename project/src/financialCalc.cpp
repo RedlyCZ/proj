@@ -27,7 +27,7 @@ perfRatios FinancialCalculator::performance(const RTPortfolio& portfolio) {
         if (avgBuy <= 0.0) {
             return 0.0; // division by zero prevention
         }
-        return (active - avgBuy) / avgBuy;
+        return (active / avgBuy);
         };
 
     for (const auto& pos : portfolio.stocks) {
@@ -49,7 +49,7 @@ perfRatios FinancialCalculator::fixedYield(const RTPortfolio& portfolio, double 
     perfRatios result;
 
     //we use quartal compounding for everything regardless of reality, cause its the most common and results wouldnt vary much otherwise (and would be hard to get data)
-    const compoundsPerYear = 4;
+    const double compoundsPerYear = 4;
     auto calculateCompoundYield = [](double annualYield, double years) -> double {
         if (annualYield <= 0.0 || years <= 0.0) {
             return 0.0;
@@ -75,4 +75,27 @@ perfRatios FinancialCalculator::fixedYield(const RTPortfolio& portfolio, double 
     }
 
     return result;
+}
+
+double FinancialCalculator::totalPerformance(const RTPortfolio& pf) {
+    //simple weighted profit calculation
+    double totalActiveValue = 0.0;
+    double totalInvestedValue = 0.0;
+
+    auto accumulateValues = [&totalActiveValue, &totalInvestedValue](const std::vector<instrumentPosition>& container) {
+        for (const auto& pos : container) {
+            totalActiveValue += (pos.activePrice * pos.quantity);
+            totalInvestedValue += (pos.averageBuyPrice * pos.quantity);
+        }
+        };
+
+    accumulateValues(pf.stocks);
+    accumulateValues(pf.cashes);
+    accumulateValues(pf.cryptos);
+
+    if (totalInvestedValue <= 0.0) {        // division by zero prevention
+        return 0.0; 
+    }
+
+    return totalActiveValue / totalInvestedValue;
 }

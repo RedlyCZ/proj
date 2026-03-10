@@ -4,6 +4,8 @@
 #include "runtimePortfolio.hpp"
 #include "snapshot.hpp"
 #include <chrono>
+#include "CLIPrinter.hpp"
+#include "financialCalc.hpp"
 
 using namespace std;
 
@@ -37,13 +39,14 @@ void testApi() {
     
     std::cout << "\n[ CryptoDataChannel ]\n";
     CryptoDataChannel cryptoChannel;
-    printResult("Crypto Price (Bitcoin)", cryptoChannel.getActivePrice("bitcoin"), "USD");
+    printResult("Crypto Price (BTC)", cryptoChannel.getActivePrice("BTC"), "USD");
     
     std::cout << "\nTests Complete.\n";
 }
 
 void testRTPortfolioBasic() {
     RTPortfolio pfOne;
+    CLIPrinter printer;
     pfOne.buyInstrument(instrumentType::STOCK, "AAPL", 5);
     pfOne.buyInstrument(instrumentType::STOCK, "GOOGL", 5);
     pfOne.buyInstrument(instrumentType::CASH, "EUR", 100);
@@ -52,7 +55,7 @@ void testRTPortfolioBasic() {
     pfOne.buyInstrument(instrumentType::CRYPTO, "BTC", 0.1);
     pfOne.loadActivePrices();
     pfOne.loadActiveYields();
-    pfOne.printAllPositions();
+    printer.printPortfolioPositions(pfOne, false);
 }
 
 void testSnapshoterSaving() {
@@ -71,10 +74,23 @@ void testSnapshoterSaving() {
 
 void testSnapshoterLoading() {
     RTPortfolio pf;
+    CLIPrinter printer;
     pf.setStoragePath("snapshots");
-    chrono::year_month_day date1{ chrono::year{2026}, chrono::March, chrono::day{9} };
+    chrono::year_month_day date1{ chrono::year{2026}, chrono::March, chrono::day{8} };
     pf.loadSnapshot(date1);
-    pf.printAllPositions();
+    printer.printPortfolioPositions(pf, false);
+    printer.printPortfolioPositions(pf, true);
+}
+
+void testCumulativeMetrics() {
+    RTPortfolio pf;
+    CLIPrinter printer;
+    FinancialCalculator calc;
+    pf.setStoragePath("snapshots");
+    chrono::year_month_day date1{ chrono::year{2026}, chrono::March, chrono::day{8} };
+    pf.loadSnapshot(date1);
+    pf.loadActivePrices();
+    printer.printCumulativeMetrics(calc.totalValue(pf), calc.valueOfType(pf.stocks), calc.valueOfType(pf.cashes), calc.valueOfType(pf.cryptos), calc.totalPerformance(pf));
 }
 
 int main() {
@@ -87,5 +103,8 @@ int main() {
     //testSnapshoterSaving();
 
     //testSnapshoterLoading();
+
+    testCumulativeMetrics();
+
     return 0;
 }

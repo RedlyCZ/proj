@@ -8,7 +8,7 @@
 
 class RTPortfolio;
 
-class instrumentPosition;
+struct instrumentPosition;
 
 struct perfRatios {
 	std::unordered_map<std::string, double> stockReturns;		//ticker, return
@@ -21,6 +21,7 @@ public:
 	double totalValue(const RTPortfolio& portfolio);
 	double valueOfType(const std::vector<instrumentPosition>& container);
 	perfRatios performance(const RTPortfolio& portfolio);
+	double totalPerformance(const RTPortfolio& portfolio);
 	perfRatios fixedYield(const RTPortfolio& portfolio, double years);
 };
 
