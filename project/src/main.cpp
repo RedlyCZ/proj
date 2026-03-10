@@ -3,6 +3,9 @@
 #include "apiMiddleman.hpp"
 #include "runtimePortfolio.hpp"
 #include "snapshot.hpp"
+#include <chrono>
+
+using namespace std;
 
 // Helper function to print results cleanly
 void printResult(const std::string& testName, double value, const std::string& unit = "") {
@@ -52,7 +55,7 @@ void testRTPortfolioBasic() {
     pfOne.printAllPositions();
 }
 
-void testSnapshoter() {
+void testSnapshoterSaving() {
     RTPortfolio pf;
     pf.buyInstrument(instrumentType::STOCK, "AAPL", 5);
     pf.buyInstrument(instrumentType::STOCK, "GOOGL", 5);
@@ -66,6 +69,14 @@ void testSnapshoter() {
     pf.saveSnapshot();
 }
 
+void testSnapshoterLoading() {
+    RTPortfolio pf;
+    pf.setStoragePath("snapshots");
+    chrono::year_month_day date1{ chrono::year{2026}, chrono::March, chrono::day{9} };
+    pf.loadSnapshot(date1);
+    pf.printAllPositions();
+}
+
 int main() {
     //testApi();
 
@@ -73,6 +84,8 @@ int main() {
     //testRTPortfolioBasic();
     
 
-    testSnapshoter();
+    //testSnapshoterSaving();
+
+    //testSnapshoterLoading();
     return 0;
 }

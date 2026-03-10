@@ -167,7 +167,7 @@ string FredChannel::resolveSeriesId(const string& ticker) {
     static const std::unordered_map<string, string> bankMap = {
         {"USD", "FEDFUNDS"},       // Federal Funds Effective Rate
         {"EUR", "ECBDFR"},         // ECB Deposit Facility Rate
-        {"GBP", "BOERUKM"},        // Bank of England Official Bank Rate
+        {"GBP", "IRSTCI01GBM156N"},        // Bank of England Official Bank Rate
         {"JPY", "IRSTCI01JPM156N"},// Japan Call Rate (overnight)
         {"CAD", "IRSTCI01CAM156N"},// Canada Overnight
         {"CHF", "IRSTCI01CHM156N"},// Swiss SARON/Overnight

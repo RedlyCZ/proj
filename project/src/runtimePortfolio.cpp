@@ -6,7 +6,7 @@
 #include <array>
 #include <iostream>
 #include <nlohmann/json.hpp>
-
+#include <optional>
 
 using json = nlohmann::json;
 using namespace std;
@@ -256,4 +256,17 @@ bool RTPortfolio::saveSnapshot() {
 	}
 	return false;
 }
+
+bool RTPortfolio::loadSnapshot(chrono::year_month_day date) {
+	Snapshoter snp(storagePath);
+	optional<RTPortfolio> loaded = snp.readSnapshot(date);
+	if (loaded == nullopt) {
+		return false;
+	}
+	stocks = loaded.value().stocks;
+	cashes = loaded.value().cashes;
+	cryptos = loaded.value().cryptos;
+	return true;
+}
+
 
