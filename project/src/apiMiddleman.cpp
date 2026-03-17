@@ -48,6 +48,46 @@ double FinnHubChannel::getActivePrice(const string& ticker) {
     return -1;
 }
 
+vector<double> FinnHubChannel::getHistoricalPrices(const string& ticker, int days) {
+    vector<double> prices;
+
+    time_t to_time = std::time(nullptr);
+    time_t from_time = to_time - (days * 24 * 60 * 60);
+
+    string url = "https://finnhub.io/api/v1/stock/candle";
+
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"symbol", ticker},
+            {"resolution", "D"},
+            {"from", std::to_string(from_time)},
+            {"to", std::to_string(to_time)},
+            {"token", finnhubApiKey}
+        }
+    );
+
+    if (r.status_code == 200) {
+        json data = json::parse(r.text);
+        if (data.contains("c") && data["c"].is_array()) {
+            for (auto&& price : data["c"]) {
+                prices.push_back(price.get<double>());
+            }
+        }
+        else if (data.contains("s") && data["s"] == "no_data") {
+            cout << "FinnHub getHistoricalPrices: No data available for this range.\n";
+        }
+        else {
+            cout << "Error - FinnHub getHistoricalPrices: 'c' key missing or not an array.\n";
+        }
+    }
+    else {
+        cout << "Error - FinnHub getHistoricalPrices failed with status: " << r.status_code << "\n";
+    }
+
+    return prices;
+}
+
 
 
 //Frankfurter, completely free API, used for forex data
@@ -110,6 +150,44 @@ double BinanceChannel::getActivePrice(const string& ticker) {
         cout << "Error - Binance getActivePrice failed with status: " << r.status_code << "\n";
     }
     return -1;
+}
+
+std::vector<double> BinanceChannel::getHistoricalPrices(const string& cryptoName, int days) {
+    std::vector<double> prices;
+
+    string symbol = cryptoName + "USDT";
+    transform(symbol.begin(), symbol.end(), symbol.begin(), ::toupper);
+
+    string url = "https://api.binance.com/api/v3/klines";
+
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"symbol", symbol},
+            {"interval", "1d"},
+            {"limit", std::to_string(days)}
+        }
+    );
+
+    if (r.status_code == 200) {
+        json data = json::parse(r.text);
+        if (data.is_array()) {
+            for (auto&& kline : data) {
+                if (kline.is_array() && kline.size() > 4) {
+                    string closePriceStr = kline[4].get<string>();
+                    prices.push_back(stod(closePriceStr));
+                }
+            }
+        }
+        else {
+            cout << "Error - Binance getHistoricalPrices: Expected an array of arrays.\n";
+        }
+    }
+    else {
+        cout << "Error - Binance getHistoricalPrices failed with status: " << r.status_code << "\n";
+    }
+
+    return prices;
 }
 
 

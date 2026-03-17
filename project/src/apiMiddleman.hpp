@@ -11,6 +11,7 @@
 class FinnHubChannel {
 public:
 	double getActivePrice(const std::string& ticker);
+	std::vector<double> getHistoricalPrices(const std::string& ticker, int days);
 };
 
 class FrankfurterChannel {
@@ -21,6 +22,7 @@ public:
 class BinanceChannel{
 public:
 	double getActivePrice(const std::string& cryptoName);
+	std::vector<double> getHistoricalPrices(const std::string& cryptoName, int days);
 };
 
 class FinancialModelingPrepChannel {
@@ -60,6 +62,15 @@ public:
 			return -1;
 		}
 	}
+	std::vector<double> getHistoricalPrices(const std::string& ticker, int days) {
+		FinnHubChannel apisrc;
+		try {
+			return apisrc.getHistoricalPrices(ticker, days);
+		}
+		catch (...) {
+			return std::vector<double>();
+		}
+	}
 };
 
 class CashDataChannel {
@@ -94,7 +105,15 @@ public:
 		catch (...) {
 			return -1;
 		}
-		
+	}
+	std::vector<double> getHistoricalPrices(const std::string& cryptoName, int days) {
+		BinanceChannel apisrc;
+		try {
+			return apisrc.getHistoricalPrices(cryptoName, days);
+		}
+		catch (...) {
+			return std::vector<double>();
+		}
 	}
 };
 
