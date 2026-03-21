@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
+#include "runtimePortfolio.hpp"
 
 
 class RTPortfolio;
@@ -23,6 +24,7 @@ public:
 	perfRatios performance(const RTPortfolio& portfolio);
 	double totalPerformance(const RTPortfolio& portfolio);
 	perfRatios fixedYield(const RTPortfolio& portfolio, double years);
+	double calculateRSI(instrumentType type, const std::string& ticker, int period);
 };
 
 

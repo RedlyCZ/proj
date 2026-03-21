@@ -1,5 +1,6 @@
 #include "financialCalc.hpp"
 #include "runtimePortfolio.hpp"
+#include "apiMiddleman.hpp"
 #include <cmath>
 
 using namespace std;
@@ -98,4 +99,70 @@ double FinancialCalculator::totalPerformance(const RTPortfolio& pf) {
     }
 
     return totalActiveValue / totalInvestedValue;
+}
+
+double FinancialCalculator::calculateRSI(instrumentType type, const string& ticker, int period) {
+    if (period <= 0) {
+        return -1.0;
+    }
+
+    vector<double> prices;
+    //fetching more history for a stabilization (wilders smoothing)
+    int fetchDays = period * 4;
+
+    switch (type) {
+    case(instrumentType::STOCK): {
+        StockDataChannel stockApi;
+        prices = stockApi.getHistoricalPrices(ticker, fetchDays);
+        break;
+    }
+    case(instrumentType::CRYPTO): {
+
+    
+        CryptoDataChannel cryptoApi;
+        prices = cryptoApi.getHistoricalPrices(ticker, fetchDays);
+        break;
+    }
+    default: {
+        return -1.0; //not implemented, RSI cant be negative
+    }
+    }
+
+    if (prices.size() <= period) {
+        return -1.0;
+    }
+
+    double avgGain = 0.0;
+    double avgLoss = 0.0;
+
+    for (int i = 1; i <= period; ++i) {
+        double change = prices[i] - prices[i - 1];
+        if (change > 0) {
+            avgGain += change;
+        }
+        else {
+            avgLoss += std::abs(change);
+        }
+    }
+
+    avgGain /= period;
+    avgLoss /= period;
+
+    // wilders smoothing
+    for (size_t i = period + 1; i < prices.size(); ++i) {
+        double change = prices[i] - prices[i - 1];
+        double gain = (change > 0) ? change : 0.0;
+        double loss = (change < 0) ? std::abs(change) : 0.0;
+
+        avgGain = ((avgGain * (period - 1)) + gain) / period;
+        avgLoss = ((avgLoss * (period - 1)) + loss) / period;
+    }
+
+    //rsi computation
+    if (avgLoss == 0.0) {
+        return 100.0; // if no losses RSI is by definition 100
+    }
+
+    double rs = avgGain / avgLoss;
+    return (100.0 - (100.0 / (1.0 + rs)));
 }
