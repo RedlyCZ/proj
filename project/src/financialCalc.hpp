@@ -25,6 +25,7 @@ public:
 	double totalPerformance(const RTPortfolio& portfolio);
 	perfRatios fixedYield(const RTPortfolio& portfolio, double years);
 	double calculateRSI(instrumentType type, const std::string& ticker, int period);
+	double monteCarloChance(instrumentType type, const std::string& ticker, int duration, double price, bool hit);
 };
 
 

@@ -2,6 +2,7 @@
 #include "runtimePortfolio.hpp"
 #include "apiMiddleman.hpp"
 #include <cmath>
+#include <random>
 
 using namespace std;
 
@@ -117,8 +118,6 @@ double FinancialCalculator::calculateRSI(instrumentType type, const string& tick
         break;
     }
     case(instrumentType::CRYPTO): {
-
-    
         CryptoDataChannel cryptoApi;
         prices = cryptoApi.getHistoricalPrices(ticker, fetchDays);
         break;
@@ -165,4 +164,102 @@ double FinancialCalculator::calculateRSI(instrumentType type, const string& tick
 
     double rs = avgGain / avgLoss;
     return (100.0 - (100.0 / (1.0 + rs)));
+}
+
+double FinancialCalculator::monteCarloChance(instrumentType type, const string& ticker, int duration, double price, bool hit) {
+    //this method is kind of longer than i would like, but decomposition would make it even harder to read
+
+    if (duration <= 0 || price <= 0.0) {
+        return -1.0;
+    }
+
+    vector<double> histPrices;
+    int fetchDays = 252; // one year data is ideal for approximation
+
+    switch (type) {
+    case(instrumentType::STOCK): {
+        StockDataChannel stockApi;
+        histPrices = stockApi.getHistoricalPrices(ticker, fetchDays);
+        break;
+    }
+    case(instrumentType::CRYPTO): {
+        CryptoDataChannel cryptoApi;
+        histPrices = cryptoApi.getHistoricalPrices(ticker, fetchDays);
+        break;
+    }
+    case(instrumentType::CASH): {
+        // Cash historicals are not yet implemented in CashDataChannel
+        return -1.0;
+    }
+    default: {
+        return -1.0;
+    }
+    }
+
+    if (histPrices.size() < 2) {
+        return -1.0; //not enough data
+    }
+
+    // calculate historical metrics
+    double sumReturns = 0.0;
+    vector<double> returns;
+    returns.reserve(histPrices.size() - 1);
+
+    for (size_t i = 1; i < histPrices.size(); ++i) {
+        double dailyReturn = log(histPrices[i] / histPrices[i - 1]);
+        returns.push_back(dailyReturn);
+        sumReturns += dailyReturn;
+    }
+
+    double meanReturn = sumReturns / returns.size();
+    double varianceSum = 0.0;
+    for (double r : returns) {
+        varianceSum += (r - meanReturn) * (r - meanReturn);
+    }
+    double variance = varianceSum / returns.size();
+    double stdDev = sqrt(variance);
+
+    // monte carlo itself
+    int numSimulations = 10000;
+    int successCount = 0;
+    double currentPrice = histPrices.back();
+    bool isTargetAbove = (price > currentPrice);
+    double drift = meanReturn - (variance / 2.0);
+
+    std::mt19937 gen(std::random_device{}());
+    std::normal_distribution<double> dist(0.0, 1.0);
+
+    //simulation
+    for (int i = 0; i < numSimulations; ++i) {
+        double simulatedPrice = currentPrice;
+        bool pathHit = false;
+
+        for (int d = 0; d < duration; ++d) {
+            double z = dist(gen);
+            simulatedPrice *= std::exp(drift + stdDev * z);
+
+            if (hit) {
+                // hit checked mid simulation
+                if ((isTargetAbove && simulatedPrice >= price) ||
+                    (!isTargetAbove && simulatedPrice <= price)) {
+                    pathHit = true;
+                    break;
+                }
+            }
+        }
+
+        //evaluation
+        if (hit) { //hit only
+            if (pathHit) {
+                successCount++;
+            }
+        }
+        else { //price above in the end
+            if ((isTargetAbove && simulatedPrice >= price) ||
+                (!isTargetAbove && simulatedPrice <= price)) {
+                successCount++;
+            }
+        }
+    }
+    return static_cast<double>(successCount) / numSimulations;
 }
