@@ -48,47 +48,47 @@ double FinnHubChannel::getActivePrice(const string& ticker) {
     return -1;
 }
 
-vector<double> FinnHubChannel::getHistoricalPrices(const string& ticker, int days) {
-    vector<double> prices;
-
-    time_t to_time = std::time(nullptr);
-    time_t from_time = to_time - (days * 24 * 60 * 60);
-
-    string url = "https://finnhub.io/api/v1/stock/candle";
+//TwelveData offers free calls to stock price history (which finnhub blocks only for premium)
+std::vector<double> TwelveDataChannel::getHistoricalPrices(const string& ticker, int days) {
+    std::vector<double> prices;
+    string url = "https://api.twelvedata.com/time_series";
 
     cpr::Response r = cpr::Get(
         cpr::Url{ url },
         cpr::Parameters{
             {"symbol", ticker},
-            {"resolution", "D"},
-            {"from", std::to_string(from_time)},
-            {"to", std::to_string(to_time)},
-            {"token", finnhubApiKey}
+            {"interval", "1day"},
+            {"outputsize", std::to_string(days)},
+            {"apikey", twelveDataApiKey}
         }
     );
 
     if (r.status_code == 200) {
         json data = json::parse(r.text);
-        if (data.contains("c") && data["c"].is_array()) {
-            for (auto&& price : data["c"]) {
-                prices.push_back(price.get<double>());
-            }
+
+        if (data.contains("status") && data["status"] == "error") {
+            cout << "TwelveData Error: " << data["message"] << "\n";
+            return prices;
         }
-        else if (data.contains("s") && data["s"] == "no_data") {
-            cout << "FinnHub getHistoricalPrices: No data available for this range.\n";
+
+        if (data.contains("values") && data["values"].is_array()) {
+            for (auto&& dayData : data["values"]) {
+                if (dayData.contains("close")) {
+                    prices.push_back(stod(dayData["close"].get<string>()));
+                }
+            }
+            std::reverse(prices.begin(), prices.end()); //orders wrong so we reverse
         }
         else {
-            cout << "Error - FinnHub getHistoricalPrices: 'c' key missing or not an array.\n";
+            cout << "Error - TwelveData getHistoricalPrices: 'values' key missing.\n";
         }
     }
     else {
-        cout << "Error - FinnHub getHistoricalPrices failed with status: " << r.status_code << "\n";
+        cout << "Error - TwelveData getHistoricalPrices failed with status: " << r.status_code << "\n";
     }
 
     return prices;
 }
-
-
 
 //Frankfurter, completely free API, used for forex data
 

@@ -7,10 +7,15 @@
 #include <string>
 
 //direct specific API abstractions
+//we use a lot of them cause we rely only on free tiers -> we collect pieces from many sources
 
 class FinnHubChannel {
 public:
 	double getActivePrice(const std::string& ticker);
+};
+
+class TwelveDataChannel {
+public:
 	std::vector<double> getHistoricalPrices(const std::string& ticker, int days);
 };
 
@@ -39,7 +44,7 @@ public:
 
 
 //generalized abstractions of instrument types
-//exception that it catches is usually the one you get when you run out of tokens, but it returning -1 signalises a problem in general
+//exception that it catches is usually the one you get when you run out of tokens, but it returning -1 (or empty vec) signalises a problem in general
 
 class StockDataChannel {
 public:
@@ -63,7 +68,7 @@ public:
 		}
 	}
 	std::vector<double> getHistoricalPrices(const std::string& ticker, int days) {
-		FinnHubChannel apisrc;
+		TwelveDataChannel apisrc;
 		try {
 			return apisrc.getHistoricalPrices(ticker, days);
 		}

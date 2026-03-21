@@ -93,6 +93,50 @@ void testCumulativeMetrics() {
     printer.printCumulativeMetrics(calc.totalValue(pf), calc.valueOfType(pf.stocks), calc.valueOfType(pf.cashes), calc.valueOfType(pf.cryptos), calc.totalPerformance(pf));
 }
 
+void testHistoricalData() {
+    std::cout << "=== Testing Historical Data APIs ===\n\n";
+    StockDataChannel stockChannel;
+    std::string stockTicker = "AAPL";
+    int stockDays = 5;
+
+    std::cout << "Fetching " << stockDays << " days of historical data for Stock: " << stockTicker << "\n";
+    std::vector<double> stockPrices = stockChannel.getHistoricalPrices(stockTicker, stockDays);
+
+    if (stockPrices.empty()) {
+        std::cout << "Result: Failed to fetch stock prices or no data available.\n";
+    }
+    else {
+        std::cout << "Result: Successfully fetched " << stockPrices.size() << " days of data.\n";
+        std::cout << "Prices: ";
+        for (double price : stockPrices) {
+            std::cout << price << " ";
+        }
+        std::cout << "\n";
+    }
+
+    std::cout << "------------------------------------\n\n";
+    CryptoDataChannel cryptoChannel;
+    std::string cryptoTicker = "BTC";
+    int cryptoDays = 5;
+
+    std::cout << "Fetching " << cryptoDays << " days of historical data for Crypto: " << cryptoTicker << " (paired with USDT)\n";
+    std::vector<double> cryptoPrices = cryptoChannel.getHistoricalPrices(cryptoTicker, cryptoDays);
+
+    if (cryptoPrices.empty()) {
+        std::cout << "Result: Failed to fetch crypto prices or no data available.\n";
+    }
+    else {
+        std::cout << "Result: Successfully fetched " << cryptoPrices.size() << " days of data.\n";
+        std::cout << "Prices: ";
+        for (double price : cryptoPrices) {
+            std::cout << price << " ";
+        }
+        std::cout << "\n";
+    }
+
+    std::cout << "====================================\n";
+}
+
 int main() {
     //testApi();
 
@@ -104,7 +148,8 @@ int main() {
 
     //testSnapshoterLoading();
 
-    testCumulativeMetrics();
+    //testCumulativeMetrics();
 
+    testHistoricalData();
     return 0;
 }
