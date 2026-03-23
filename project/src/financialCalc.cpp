@@ -263,3 +263,64 @@ double FinancialCalculator::monteCarloChance(instrumentType type, const string& 
     }
     return static_cast<double>(successCount) / numSimulations;
 }
+
+int FinancialCalculator::bollingerOverbought(instrumentType type, const string& ticker) {
+    int period = 20; // Standard Bollinger Band lookback period
+    vector<double> prices;
+
+    switch (type) {
+    case(instrumentType::STOCK): {
+        StockDataChannel stockApi;
+        prices = stockApi.getHistoricalPrices(ticker, period);
+        break;
+    }
+    case(instrumentType::CRYPTO): {
+        CryptoDataChannel cryptoApi;
+        prices = cryptoApi.getHistoricalPrices(ticker, period);
+        break;
+    }
+    case(instrumentType::CASH): {
+        return -10;
+    }
+    default: {
+        return -10;
+    }
+    }
+
+    if (prices.size() < period) {
+        return -10; //not enough data
+    }
+
+    //calculate SMA
+    double sum = 0.0;
+    for (double p : prices) {
+        sum += p;
+    }
+    double sma = sum / prices.size();
+
+    //calcualte standard deviation
+    double varianceSum = 0.0;
+    for (double p : prices) {
+        varianceSum += (p - sma) * (p - sma);
+    }
+    double variance = varianceSum / prices.size();
+    double stdDev = std::sqrt(variance);
+
+    // bollinger eval
+    double currentPrice = prices.back();
+
+    if (currentPrice > sma + (2.0 * stdDev)) {
+        return 2;  // Very overbought (> +2 Sigma)
+    }
+    else if (currentPrice > sma + stdDev) {
+        return 1;  // Slightly overbought (> +1 Sigma)
+    }
+    else if (currentPrice < sma - (2.0 * stdDev)) {
+        return -2; // Very oversold (< -2 Sigma)
+    }
+    else if (currentPrice < sma - stdDev) {
+        return -1; // Slightly oversold (< -1 Sigma)
+    }
+
+    return 0; // Fair value (between -1 and +1 Sigma)
+}

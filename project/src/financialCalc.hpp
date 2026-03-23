@@ -26,6 +26,7 @@ public:
 	perfRatios fixedYield(const RTPortfolio& portfolio, double years);
 	double calculateRSI(instrumentType type, const std::string& ticker, int period);
 	double monteCarloChance(instrumentType type, const std::string& ticker, int duration, double price, bool hit);
+	int bollingerOverbought(instrumentType type, const std::string& ticker); //0 is fair, -1 slightly oversold, 2 very overbought etc. [-2;2]
 };
 
 

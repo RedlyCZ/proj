@@ -161,6 +161,22 @@ void testMonteCarlo() {
 
 }
 
+void testBollingerBands() {
+    FinancialCalculator calc;
+
+    std::cout << "TEST: Bollinger Bands (AAPL - Stock)\n";
+    std::cout << "RESULT: " << calc.bollingerOverbought(instrumentType::STOCK, "SMCI") << "\n";
+    std::cout << "----------------------------------------\n";
+
+    std::cout << "TEST: Bollinger Bands (BTC - Crypto)\n";
+    std::cout << "RESULT: " << calc.bollingerOverbought(instrumentType::CRYPTO, "BTC") << "\n";
+    std::cout << "----------------------------------------\n";
+
+    std::cout << "TEST: Bollinger Bands (EUR - Cash)\n";
+    std::cout << "RESULT: " << calc.bollingerOverbought(instrumentType::CASH, "EUR") << "\n";
+    std::cout << "----------------------------------------\n";
+}
+
 int main() {
     //testApi();
 
@@ -179,6 +195,8 @@ int main() {
     //testRSI();
 
     //testMonteCarlo();
+
+    testBollingerBands();
 
     return 0;
 }
