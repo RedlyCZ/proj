@@ -137,6 +137,30 @@ void testHistoricalData() {
     std::cout << "====================================\n";
 }
 
+void testRSI() {
+    FinancialCalculator calc;
+
+    double stockRSI = calc.calculateRSI(instrumentType::STOCK, "AAPL", 14);
+    printResult("RSI 14-day (AAPL - Stock)", stockRSI);
+
+    double cryptoRSI = calc.calculateRSI(instrumentType::CRYPTO, "BTC", 14);
+    printResult("RSI 14-day (BTC - Crypto)", cryptoRSI);
+}
+
+void testMonteCarlo() {
+    FinancialCalculator calc;
+
+    double aaplHit = calc.monteCarloChance(instrumentType::STOCK, "AAPL", 30, 250.0, true);
+    printResult("Chance AAPL touches $250 within 30 days", aaplHit);
+
+    double aaplNoHit = calc.monteCarloChance(instrumentType::STOCK, "AAPL", 30, 250.0, false);
+    printResult("Chance AAPL finishes >= $250 exactly at day 30", aaplNoHit);
+
+    double btcHit = calc.monteCarloChance(instrumentType::CRYPTO, "BTC", 60, 100000.0, true);
+    printResult("Chance BTC touches $100k within 60 days", btcHit);
+
+}
+
 int main() {
     //testApi();
 
@@ -150,6 +174,11 @@ int main() {
 
     //testCumulativeMetrics();
 
-    testHistoricalData();
+    //testHistoricalData();
+
+    //testRSI();
+
+    //testMonteCarlo();
+
     return 0;
 }
