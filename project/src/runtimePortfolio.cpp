@@ -21,29 +21,91 @@ int RTPortfolio::findTickerIndex(const string& newTicker, const vector<instrumen
 	return -1;
 }
 
-double RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, double newQuantity) {
-	double activePrice = 0;
-	vector<instrumentPosition>* selectedContainer = nullptr;
-	switch(type) {
+bool RTPortfolio::depositCash(double quantity) {
+	if (quantity <= 0) {
+		cout << "Error, cannot deposit zero or negative amounts\n";
+		return false;
+	}
+
+	totalDeposited += quantity;
+
+	int posIndex = findTickerIndex("USD", cashes);
+
+	if (posIndex == -1) { //no dollar position yet
+		instrumentPosition newPos;
+		newPos.positionType = instrumentType::CASH;
+		newPos.ticker = "USD";
+		newPos.quantity = quantity;
+		newPos.averageBuyPrice = 1.0; //one dollar is always one dollar
+		cashes.push_back(newPos);
+	}
+	else {
+		cashes[posIndex].quantity += quantity;
+	}
+	return true; //passed
+}
+
+bool RTPortfolio::withdrawCash(double quantity) {
+	if (quantity <= 0) {
+		cout << "Error, cannot withdraw zero or negative amounts\n";
+		return false;
+	}
+
+	int posIndex = findTickerIndex("USD", cashes);
+
+	if (posIndex == -1) {
+		cout << "Error, no USD balance to withdraw from\n";
+		return false;
+	}
+
+	instrumentPosition& editPos = cashes[posIndex];
+
+	if (editPos.quantity < quantity) {
+		cout << "Error, insufficient USD funds for withdrawal\n";
+		return false;
+	}
+
+	editPos.quantity -= quantity;
+	totalWithdrawn += quantity;
+
+	return true;
+}
+
+vector<instrumentPosition>* RTPortfolio::getContainer(instrumentType type) {
+	switch (type) {
+	case instrumentType::STOCK:
+		return &stocks;
+	case instrumentType::CASH:
+		return &cashes;
+	case instrumentType::CRYPTO:
+		return &cryptos;
+	}
+	return nullptr;
+}
+
+double RTPortfolio::getActivePrice(instrumentType type, const string& ticker) {
+	switch (type) {
 	case instrumentType::STOCK: {
 		StockDataChannel stockApi;
-		activePrice = stockApi.getActivePrice(newTicker);
-		selectedContainer = &stocks;
-		break;
+		return stockApi.getActivePrice(ticker);
 	}
 	case instrumentType::CASH: {
 		CashDataChannel cashApi;
-		activePrice = cashApi.getConversionRate(newTicker);
-		selectedContainer = &cashes;
-		break;
+		return cashApi.getConversionRate(ticker);
 	}
 	case instrumentType::CRYPTO: {
 		CryptoDataChannel cryptoApi;
-		activePrice = cryptoApi.getActivePrice(newTicker);
-		selectedContainer = &cryptos;
-		break;
+		return cryptoApi.getActivePrice(ticker);
 	}
 	}
+	return -1.0;
+}
+
+
+double RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, double newQuantity) {
+	double activePrice = getActivePrice(type, newTicker);
+	vector<instrumentPosition>* selectedContainer = getContainer(type);
+
 	if (activePrice < 0) {
 		cout << "Error 3, failed to load price, buying\n";
 		return 0;
@@ -53,9 +115,19 @@ double RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, 
 		return 0;
 	}
 
+	double totalCost = activePrice * newQuantity;
+	int usdIndex = findTickerIndex("USD", cashes);
+
+	if (usdIndex == -1 || cashes[usdIndex].quantity < totalCost) {
+		cout << "Error, insufficient USD funds for purchase\n";
+		return 0;
+	}
+
+	cashes[usdIndex].quantity -= totalCost;
+
 	int posIndex = findTickerIndex(newTicker, *selectedContainer);
 
-	if (posIndex == -1) {				//means ticker not present in vector
+	if (posIndex == -1) {
 		instrumentPosition newPos;
 		newPos.positionType = type;
 		newPos.ticker = newTicker;
@@ -66,37 +138,18 @@ double RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, 
 	else {
 		instrumentPosition& editPos = (*selectedContainer)[posIndex];
 		double totalQuantity = editPos.quantity + newQuantity;
-		double totalInvested = (editPos.quantity * editPos.averageBuyPrice) + (newQuantity * activePrice);
+		double totalInvested = (editPos.quantity * editPos.averageBuyPrice) + totalCost;
 		editPos.averageBuyPrice = totalInvested / totalQuantity;
 		editPos.quantity = totalQuantity;
 	}
 
-	return activePrice * newQuantity; //returns cost
+	return totalCost;
 }
 
 double RTPortfolio::sellInstrument(instrumentType type, const string& newTicker, double newQuantity, bool closePosition) {
-	double activePrice = 0;
-	vector<instrumentPosition>* selectedContainer = nullptr;
-	switch (type) {
-	case instrumentType::STOCK: {
-		StockDataChannel stockApi;
-		activePrice = stockApi.getActivePrice(newTicker);
-		selectedContainer = &stocks;
-		break;
-	}
-	case instrumentType::CASH: {
-		CashDataChannel cashApi;
-		activePrice = cashApi.getConversionRate(newTicker);
-		selectedContainer = &cashes;
-		break;
-	}
-	case instrumentType::CRYPTO: {
-		CryptoDataChannel cryptoApi;
-		activePrice = cryptoApi.getActivePrice(newTicker);
-		selectedContainer = &cryptos;
-		break;
-	}
-	}
+	double activePrice = getActivePrice(type, newTicker);
+	vector<instrumentPosition>* selectedContainer = getContainer(type);
+
 	if (activePrice < 0) {
 		cout << "Error 3, failed to load price, selling\n";
 		return 0;
@@ -107,17 +160,18 @@ double RTPortfolio::sellInstrument(instrumentType type, const string& newTicker,
 	}
 
 	int posIndex = findTickerIndex(newTicker, *selectedContainer);
+	double totalGained = 0;
 
-	if (posIndex == -1) {				//means ticker not present in vector
+	if (posIndex == -1) {
 		cout << "Error 8, cant sell unbuyed\n";
 		return 0;
 	}
 	else {
 		instrumentPosition& editPos = (*selectedContainer)[posIndex];
-		if (closePosition) { //if we are closing, newQuantity is worthless parameter
+		if (closePosition) {
 			double savedQuantity = editPos.quantity;
 			(*selectedContainer).erase((*selectedContainer).begin() + posIndex);
-			return activePrice * savedQuantity;
+			totalGained = activePrice * savedQuantity;
 		}
 		else if (editPos.quantity < newQuantity) {
 			cout << "Error 9, cant sell more than you have\n";
@@ -125,10 +179,24 @@ double RTPortfolio::sellInstrument(instrumentType type, const string& newTicker,
 		}
 		else {
 			editPos.quantity = editPos.quantity - newQuantity;
-			//selling doesnt affect averageBuyPrice
+			totalGained = activePrice * newQuantity;
 		}
 	}
-	return activePrice * newQuantity; //returns money gained from sell
+
+	int usdIndex = findTickerIndex("USD", cashes);
+	if (usdIndex == -1) {	//we should always have dollar position when here, but whatever
+		instrumentPosition newPos;
+		newPos.positionType = instrumentType::CASH;
+		newPos.ticker = "USD";
+		newPos.quantity = totalGained;
+		newPos.averageBuyPrice = 1.0;
+		cashes.push_back(newPos);
+	}
+	else {
+		cashes[usdIndex].quantity += totalGained;
+	}
+
+	return totalGained;
 }
 
 
@@ -249,5 +317,3 @@ bool RTPortfolio::loadSnapshot(chrono::year_month_day date) {
 	cryptos = loaded.value().cryptos;
 	return true;
 }
-
-

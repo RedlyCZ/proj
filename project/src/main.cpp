@@ -177,6 +177,72 @@ void testBollingerBands() {
     std::cout << "----------------------------------------\n";
 }
 
+void testHistoricalPriceByDate() {
+    std::cout << "========================================\n";
+    std::cout << "   API HISTORICAL DATE QUERY TESTER     \n";
+    std::cout << "========================================\n\n";
+
+    // Picking a known past weekday (Friday, Jan 5, 2024) 
+    std::chrono::year_month_day testDate{ std::chrono::year{2024}, std::chrono::January, std::chrono::day{5} };
+
+    std::cout << "[ StockDataChannel ]\n";
+    StockDataChannel stockChannel;
+    printResult("Historical Stock (AAPL) on 2024-01-05", stockChannel.getHistoricalPriceByDate("AAPL", testDate), "USD");
+
+    std::cout << "\n[ CashDataChannel ]\n";
+    CashDataChannel cashChannel;
+    printResult("Historical Forex Rate (EUR -> USD) on 2024-01-05", cashChannel.getHistoricalPriceByDate("EUR", testDate), "USD");
+
+    std::cout << "\n[ CryptoDataChannel ]\n";
+    CryptoDataChannel cryptoChannel;
+    printResult("Historical Crypto Price (BTC) on 2024-01-05", cryptoChannel.getHistoricalPriceByDate("BTC", testDate), "USD");
+
+    std::cout << "\nTests Complete.\n";
+}
+
+void testBacktestPerformance() {
+    std::cout << "========================================\n";
+    std::cout << "      BACKTEST PERFORMANCE TESTER       \n";
+    std::cout << "========================================\n\n";
+
+    RTPortfolio pf;
+    FinancialCalculator calc;
+
+    // 1. Build a dummy portfolio
+    std::cout << "Buying instruments (this fetches current active prices as a baseline)...\n";
+    pf.buyInstrument(instrumentType::STOCK, "AAPL", 10);
+    pf.buyInstrument(instrumentType::CASH, "EUR", 1000);
+    pf.buyInstrument(instrumentType::CRYPTO, "BTC", 0.1);
+
+    // Make sure active prices are properly set for the calculator
+    pf.loadActivePrices();
+
+    // 2. Define the historical date to compare against
+    std::chrono::year_month_day testDate{ std::chrono::year{2024}, std::chrono::January, std::chrono::day{5} };
+    std::cout << "\nRunning backtest comparing CURRENT prices against 2024-01-05...\n";
+
+    // 3. Test individual performance ratios
+    perfRatios ratios = calc.backtestPerformace(pf, testDate);
+
+    std::cout << "\n--- Individual Returns (Current / Historical) ---\n";
+    for (const auto& [ticker, returnRatio] : ratios.stockReturns) {
+        std::cout << "Stock [" << ticker << "]: " << returnRatio << "x\n";
+    }
+    for (const auto& [ticker, returnRatio] : ratios.cashReturns) {
+        std::cout << "Cash  [" << ticker << "]: " << returnRatio << "x\n";
+    }
+    for (const auto& [ticker, returnRatio] : ratios.cryptoReturns) {
+        std::cout << "Crypto[" << ticker << "]: " << returnRatio << "x\n";
+    }
+    std::cout << "-------------------------------------------------\n";
+
+    // 4. Test total portfolio performance
+    double totalPerf = calc.backtestTotalPerformance(pf, testDate);
+
+    std::cout << "\n";
+    printResult("Total Portfolio Backtest Multiplier", totalPerf, "x");
+}
+
 int main() {
     //testApi();
 
@@ -196,7 +262,11 @@ int main() {
 
     //testMonteCarlo();
 
-    testBollingerBands();
+    //testBollingerBands();
+
+    //testHistoricalPriceByDate();
+
+    testBacktestPerformance();
 
     return 0;
 }

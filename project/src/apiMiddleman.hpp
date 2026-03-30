@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <string>
+#include <chrono>
 
 //direct specific API abstractions
 //we use a lot of them cause we rely only on free tiers -> we collect pieces from many sources
@@ -17,17 +18,20 @@ public:
 class TwelveDataChannel {
 public:
 	std::vector<double> getHistoricalPrices(const std::string& ticker, int days);
+	double getHistoricalPriceByDate(const std::string& ticker, const std::chrono::year_month_day& date);
 };
 
 class FrankfurterChannel {
 public:
 	double conversionRate(const std::string& baseCurrency, const std::string& targetCurrency = "USD");
+	double getHistoricalRateByDate(const std::string& baseCurrency, const std::chrono::year_month_day& date, const std::string& targetCurrency = "USD");
 };
 
 class BinanceChannel{
 public:
 	double getActivePrice(const std::string& cryptoName);
 	std::vector<double> getHistoricalPrices(const std::string& cryptoName, int days);
+	double getHistoricalPriceByDate(const std::string& cryptoName, const std::chrono::year_month_day& date);
 };
 
 class FinancialModelingPrepChannel {
@@ -56,7 +60,6 @@ public:
 		catch(...){
 			return -1;
 		}
-		
 	}
 	double getActiveDividend(const std::string& ticker) {
 		FinancialModelingPrepChannel apisrc;
@@ -74,6 +77,15 @@ public:
 		}
 		catch (...) {
 			return std::vector<double>();
+		}
+	}
+	double getHistoricalPriceByDate(const std::string& ticker, const std::chrono::year_month_day& date) {
+		TwelveDataChannel apisrc;
+		try {
+			return apisrc.getHistoricalPriceByDate(ticker, date);
+		}
+		catch (...) {
+			return -1.0;
 		}
 	}
 };
@@ -98,6 +110,15 @@ public:
 			return -1;
 		}
 	}
+	double getHistoricalPriceByDate(const std::string& ticker, const std::chrono::year_month_day& date) {
+		FrankfurterChannel apisrc;
+		try {
+			return apisrc.getHistoricalRateByDate(ticker, date);
+		}
+		catch (...) {
+			return -1.0;
+		}
+	}
 };
 
 class CryptoDataChannel {
@@ -118,6 +139,15 @@ public:
 		}
 		catch (...) {
 			return std::vector<double>();
+		}
+	}
+	double getHistoricalPriceByDate(const std::string& cryptoName, const std::chrono::year_month_day& date) {
+		BinanceChannel apisrc;
+		try {
+			return apisrc.getHistoricalPriceByDate(cryptoName, date);
+		}
+		catch (...) {
+			return -1.0;
 		}
 	}
 };

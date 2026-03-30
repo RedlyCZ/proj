@@ -52,7 +52,7 @@ perfRatios FinancialCalculator::fixedYield(const RTPortfolio& portfolio, double 
 
     //we use quartal compounding for everything regardless of reality, cause its the most common and results wouldnt vary much otherwise (and would be hard to get data)
     const double compoundsPerYear = 4;
-    auto calculateCompoundYield = [](double annualYield, double years) -> double {
+    auto calculateCompoundYield = [](double annualYield, double years, const double compoundsPerYear) -> double {
         if (annualYield <= 0.0 || years <= 0.0) {
             return 0.0;
         }
@@ -64,16 +64,16 @@ perfRatios FinancialCalculator::fixedYield(const RTPortfolio& portfolio, double 
 
     //containing reinvestments
     for (const auto& pos : portfolio.stocks) {
-        result.stockReturns[pos.ticker] = calculateCompoundYield(pos.yield, years);
+        result.stockReturns[pos.ticker] = calculateCompoundYield(pos.yield, years, compoundsPerYear);
     }
 
     for (const auto& pos : portfolio.cashes) {
-        result.cashReturns[pos.ticker] = calculateCompoundYield(pos.yield, years);
+        result.cashReturns[pos.ticker] = calculateCompoundYield(pos.yield, years, compoundsPerYear);
     }
 
     //Didnt find api for stacking yields, so this goes without calculation, but if yields ARE given, will work
     for (const auto& pos : portfolio.cryptos) {
-        result.cryptoReturns[pos.ticker] = calculateCompoundYield(pos.yield, years);
+        result.cryptoReturns[pos.ticker] = calculateCompoundYield(pos.yield, years, compoundsPerYear);
     }
 
     return result;
@@ -85,7 +85,7 @@ double FinancialCalculator::totalPerformance(const RTPortfolio& pf) {
     double totalInvestedValue = 0.0;
 
     auto accumulateValues = [&totalActiveValue, &totalInvestedValue](const std::vector<instrumentPosition>& container) {
-        for (const auto& pos : container) {
+        for (auto&& pos : container) {
             totalActiveValue += (pos.activePrice * pos.quantity);
             totalInvestedValue += (pos.averageBuyPrice * pos.quantity);
         }
@@ -310,17 +310,78 @@ int FinancialCalculator::bollingerOverbought(instrumentType type, const string& 
     double currentPrice = prices.back();
 
     if (currentPrice > sma + (2.0 * stdDev)) {
-        return 2;  // Very overbought (> +2 Sigma)
+        return 2;  // Very overbought
     }
     else if (currentPrice > sma + stdDev) {
-        return 1;  // Slightly overbought (> +1 Sigma)
+        return 1;  // Slightly overbought
     }
     else if (currentPrice < sma - (2.0 * stdDev)) {
-        return -2; // Very oversold (< -2 Sigma)
+        return -2; // Very oversold
     }
     else if (currentPrice < sma - stdDev) {
-        return -1; // Slightly oversold (< -1 Sigma)
+        return -1; // Slightly oversold
     }
 
-    return 0; // Fair value (between -1 and +1 Sigma)
+    return 0; // Fair value
+}
+
+perfRatios FinancialCalculator::backtestPerformace(const RTPortfolio& portfolio, const std::chrono::year_month_day& startDate) {
+    perfRatios result;
+
+    auto calculateReturn = [](double active, double historical) -> double {
+        if (historical <= 0.0) {
+            return 0.0; //zero div prevention
+        }
+        return (active / historical);
+        };
+
+    StockDataChannel stockApi;
+    for (const auto& pos : portfolio.stocks) {
+        double histPrice = stockApi.getHistoricalPriceByDate(pos.ticker, startDate);
+        result.stockReturns[pos.ticker] = calculateReturn(pos.activePrice, histPrice);
+    }
+
+    CashDataChannel cashApi;
+    for (const auto& pos : portfolio.cashes) {
+        double histPrice = cashApi.getHistoricalPriceByDate(pos.ticker, startDate);
+        result.cashReturns[pos.ticker] = calculateReturn(pos.activePrice, histPrice);
+    }
+
+    CryptoDataChannel cryptoApi;
+    for (const auto& pos : portfolio.cryptos) {
+        double histPrice = cryptoApi.getHistoricalPriceByDate(pos.ticker, startDate);
+        result.cryptoReturns[pos.ticker] = calculateReturn(pos.activePrice, histPrice);
+    }
+
+    return result;
+}
+
+double FinancialCalculator::backtestTotalPerformance(const RTPortfolio& pf, const std::chrono::year_month_day& startDate) {
+    double totalActiveValue = 0.0;
+    double totalHistoricalValue = 0.0;
+
+    auto accumulateValues = [&totalActiveValue, &totalHistoricalValue, &startDate](auto& container, auto& apiChannel) {
+        for (const auto& pos : container) {
+            double histPrice = apiChannel.getHistoricalPriceByDate(pos.ticker, startDate);
+            if (histPrice > 0.0) { // only calculate if we successfully fetched the historical price
+                totalActiveValue += (pos.activePrice * pos.quantity);
+                totalHistoricalValue += (histPrice * pos.quantity);
+            }
+        }
+        };
+
+    StockDataChannel stockApi;
+    accumulateValues(pf.stocks, stockApi);
+
+    CashDataChannel cashApi;
+    accumulateValues(pf.cashes, cashApi);
+
+    CryptoDataChannel cryptoApi;
+    accumulateValues(pf.cryptos, cryptoApi);
+
+    if (totalHistoricalValue <= 0.0) { //zero div prevention
+        return 0.0;
+    }
+
+    return totalActiveValue / totalHistoricalValue;
 }

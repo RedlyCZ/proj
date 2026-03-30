@@ -9,6 +9,7 @@
 #include <nlohmann/json.hpp>
 #include <thread>
 #include <chrono>
+#include <format>
 
 
 using json = nlohmann::json;
@@ -20,6 +21,18 @@ const string twelveDataApiKey = "4818bbe7eae44f9f9953f16e09e15398";
 const string apiNinjaApiKey = "edYYHgdoAENWYD8N1i9k2rWLmlN5QtXPHU4zO3dY";
 const string fredApiKey = "bd4aa411be07e1d514736502aabfe3a6";
 const string fmpApiKey = "Dgolm4HnDmWEvMhJQ19rCsUhzL4KmR6R";
+
+
+//helper methods
+
+std::string formatYMD(const std::chrono::year_month_day& ymd) {
+    return std::format("{:%Y-%m-%d}", ymd);
+}
+
+long long ymdToMsEpoch(const std::chrono::year_month_day& ymd) {
+    std::chrono::sys_days days = ymd;
+    return std::chrono::duration_cast<std::chrono::milliseconds>(days.time_since_epoch()).count();
+}
 
 
 //FinnHub, free API 60 calls per minute, used for stock data
@@ -90,6 +103,42 @@ std::vector<double> TwelveDataChannel::getHistoricalPrices(const string& ticker,
     return prices;
 }
 
+double TwelveDataChannel::getHistoricalPriceByDate(const string& ticker, const chrono::year_month_day& date) {
+    string url = "https://api.twelvedata.com/time_series";
+    string dateStr = formatYMD(date);
+
+    // outputsize=1 and end_date ensures we get the close price of that exact day 
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"symbol", ticker},
+            {"interval", "1day"},
+            {"outputsize", "1"},
+            {"end_date", dateStr + " 23:59:59"},
+            {"apikey", twelveDataApiKey}
+        }
+    );
+
+    if (r.status_code == 200) {
+        json data = json::parse(r.text);
+        if (data.contains("values") && data["values"].is_array() && !data["values"].empty()) {
+            if (data["values"][0].contains("close")) {
+                return stod(data["values"][0]["close"].get<string>());
+            }
+        }
+        else if (data.contains("status") && data["status"] == "error") {
+            cout << "TwelveData Error: " << data["message"] << "\n";
+        }
+        else {
+            cout << "Error - TwelveData getHistoricalPriceByDate: No data found.\n";
+        }
+    }
+    else {
+        cout << "Error - TwelveData getHistoricalPriceByDate failed with status: " << r.status_code << "\n";
+    }
+    return -1.0;
+}
+
 //Frankfurter, completely free API, used for forex data
 
 double FrankfurterChannel::conversionRate(const string& baseCurrency, const string& targetCurrency) {
@@ -114,6 +163,33 @@ double FrankfurterChannel::conversionRate(const string& baseCurrency, const stri
         cout << "Error 5 - conversion rate\n";
     }
     return -1;
+}
+
+double FrankfurterChannel::getHistoricalRateByDate(const string& baseCurrency, const chrono::year_month_day& date, const string& targetCurrency) {
+    string dateStr = formatYMD(date);
+    string url = "https://api.frankfurter.app/" + dateStr;
+
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"from", baseCurrency},
+            {"to", targetCurrency}
+        }
+    );
+
+    if (r.status_code == 200) {
+        json data = json::parse(r.text);
+        if (data.contains("rates") && data["rates"].contains(targetCurrency)) {
+            return data["rates"][targetCurrency];
+        }
+        else {
+            cout << "Error 6 - historical conversion rate key missing.\n";
+        }
+    }
+    else {
+        cout << "Error 7 - historical conversion rate failed with status: " << r.status_code << "\n";
+    }
+    return -1.0;
 }
 
 
@@ -188,6 +264,43 @@ std::vector<double> BinanceChannel::getHistoricalPrices(const string& cryptoName
     }
 
     return prices;
+}
+
+double BinanceChannel::getHistoricalPriceByDate(const string& cryptoName, const chrono::year_month_day& date) {
+    string symbol = cryptoName + "USDT";
+    transform(symbol.begin(), symbol.end(), symbol.begin(), ::toupper);
+
+    string url = "https://api.binance.com/api/v3/klines";
+
+    long long startTime = ymdToMsEpoch(date);
+    long long endTime = startTime + 86400000; // +1 day in milliseconds
+
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"symbol", symbol},
+            {"interval", "1d"},
+            {"startTime", std::to_string(startTime)},
+            {"endTime", std::to_string(endTime)},
+            {"limit", "1"}
+        }
+    );
+
+    if (r.status_code == 200) {
+        json data = json::parse(r.text);
+        if (data.is_array() && !data.empty()) {
+            if (data[0].is_array() && data[0].size() > 4) {
+                return stod(data[0][4].get<string>());
+            }
+        }
+        else {
+            cout << "Error - Binance getHistoricalPriceByDate: Expected array data missing.\n";
+        }
+    }
+    else {
+        cout << "Error - Binance getHistoricalPriceByDate failed with status: " << r.status_code << "\n";
+    }
+    return -1.0;
 }
 
 

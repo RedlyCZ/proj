@@ -29,11 +29,15 @@ public:
 class RTPortfolio {
 private:
 	int findTickerIndex(const std::string& newTicker, const std::vector<instrumentPosition>& container);
+	std::vector<instrumentPosition>* getContainer(instrumentType type);
+	double getActivePrice(instrumentType type, const std::string& ticker);
 	bool loadActivePricesStocks(); //return false if api failed
 	bool loadActivePricesCash();
 	bool loadActivePricesCrypto();
 	bool loadActiveYieldsStocks();
 	bool loadActiveYieldsCash();
+	double totalDeposited = 0;
+	double totalWithdrawn = 0;
 public:
 	std::vector<instrumentPosition> stocks;
 	std::vector<instrumentPosition> cashes;
@@ -42,6 +46,8 @@ public:
 	void setStoragePath(const std::string& path) {
 		storagePath = path;
 	}
+	bool depositCash(double quantity);			//for simplicity only takes dollars as the base currency
+	bool withdrawCash(double quantity);
 	double buyInstrument(instrumentType type, const std::string& newTicker, double newQuantity);							//returns price spent
 	double sellInstrument(instrumentType type, const std::string& newTicker, double newQuantity, bool closePosition);		//returns price recieved
 	bool loadActivePrices();	//return false if loading failed
