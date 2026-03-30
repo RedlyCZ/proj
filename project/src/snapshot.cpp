@@ -57,6 +57,9 @@ bool Snapshoter::writeSnapshot(const RTPortfolio& portfolio) {                  
     j["cryptos"] = portfolio.cryptos;
     j["cashes"] = portfolio.cashes;
 
+    j["totalDeposited"] = portfolio.totalDeposited;
+    j["totalWithdrawn"] = portfolio.totalWithdrawn;
+
     out_file << j.dump(4);
 
     return true;
@@ -77,6 +80,9 @@ optional<RTPortfolio> Snapshoter::readSnapshot(const chrono::year_month_day& sea
         pfReturn.cryptos = snapshotJSON.at("cryptos").get<std::vector<instrumentPosition>>();
         pfReturn.cashes = snapshotJSON.at("cashes").get<std::vector<instrumentPosition>>();
         
+        pfReturn.totalDeposited = snapshotJSON.at("totalDeposited").get<double>();
+        pfReturn.totalWithdrawn = snapshotJSON.at("totalWithdrawn").get<double>();
+
         return pfReturn;
     }
     catch (...) {

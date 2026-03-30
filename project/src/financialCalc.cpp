@@ -80,26 +80,16 @@ perfRatios FinancialCalculator::fixedYield(const RTPortfolio& portfolio, double 
 }
 
 double FinancialCalculator::totalPerformance(const RTPortfolio& pf) {
-    //simple weighted profit calculation
-    double totalActiveValue = 0.0;
-    double totalInvestedValue = 0.0;
+    //simple total portfolio profit calc
+    double netInvested = pf.totalDeposited - pf.totalWithdrawn;
 
-    auto accumulateValues = [&totalActiveValue, &totalInvestedValue](const std::vector<instrumentPosition>& container) {
-        for (auto&& pos : container) {
-            totalActiveValue += (pos.activePrice * pos.quantity);
-            totalInvestedValue += (pos.averageBuyPrice * pos.quantity);
-        }
-        };
-
-    accumulateValues(pf.stocks);
-    accumulateValues(pf.cashes);
-    accumulateValues(pf.cryptos);
-
-    if (totalInvestedValue <= 0.0) {        // division by zero prevention
-        return 0.0; 
+    if (netInvested <= 0.0) { //zero div prevention
+        return 0.0;
     }
 
-    return totalActiveValue / totalInvestedValue;
+    double totalValueNow = totalValue(pf);
+
+    return (totalValueNow - netInvested) / netInvested;
 }
 
 double FinancialCalculator::calculateRSI(instrumentType type, const string& ticker, int period) {

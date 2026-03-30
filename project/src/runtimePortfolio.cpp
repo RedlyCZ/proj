@@ -315,5 +315,7 @@ bool RTPortfolio::loadSnapshot(chrono::year_month_day date) {
 	stocks = loaded.value().stocks;
 	cashes = loaded.value().cashes;
 	cryptos = loaded.value().cryptos;
+	totalDeposited = loaded.value().totalDeposited;
+	totalWithdrawn = loaded.value().totalWithdrawn;
 	return true;
 }

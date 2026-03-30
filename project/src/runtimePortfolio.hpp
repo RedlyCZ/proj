@@ -36,13 +36,13 @@ private:
 	bool loadActivePricesCrypto();
 	bool loadActiveYieldsStocks();
 	bool loadActiveYieldsCash();
-	double totalDeposited = 0;
-	double totalWithdrawn = 0;
 public:
 	std::vector<instrumentPosition> stocks;
 	std::vector<instrumentPosition> cashes;
 	std::vector<instrumentPosition> cryptos;
 	std::string storagePath;
+	double totalDeposited = 0;
+	double totalWithdrawn = 0;
 	void setStoragePath(const std::string& path) {
 		storagePath = path;
 	}
