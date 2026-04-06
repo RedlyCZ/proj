@@ -37,6 +37,7 @@ bool RTPortfolio::depositCash(double quantity) {
 		newPos.ticker = "USD";
 		newPos.quantity = quantity;
 		newPos.averageBuyPrice = 1.0; //one dollar is always one dollar
+		newPos.activePrice = 1.0;
 		cashes.push_back(newPos);
 	}
 	else {
@@ -133,6 +134,7 @@ double RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, 
 		newPos.ticker = newTicker;
 		newPos.quantity = newQuantity;
 		newPos.averageBuyPrice = activePrice;
+		newPos.activePrice = activePrice;
 		selectedContainer->push_back(newPos);
 	}
 	else {
@@ -141,6 +143,7 @@ double RTPortfolio::buyInstrument(instrumentType type, const string& newTicker, 
 		double totalInvested = (editPos.quantity * editPos.averageBuyPrice) + totalCost;
 		editPos.averageBuyPrice = totalInvested / totalQuantity;
 		editPos.quantity = totalQuantity;
+		editPos.activePrice = activePrice;
 	}
 
 	return totalCost;
@@ -220,6 +223,10 @@ bool RTPortfolio::loadActivePricesCash() {
 	CashDataChannel apiSource;
 	for (size_t i = 0; i < cashes.size(); i++) {
 		instrumentPosition& loadPos = cashes[i];
+		if (loadPos.ticker == "USD") {
+			loadPos.activePrice = 1.0;
+			continue;
+		}
 		double loadedVal = apiSource.getConversionRate(loadPos.ticker);
 		if (loadedVal < 0) {
 			cout << "Error, failed to load cash price\n";

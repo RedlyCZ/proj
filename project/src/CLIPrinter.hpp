@@ -1,11 +1,12 @@
 #ifndef CLIPrinterLib
 #define CLIPrinterLib
 
-
+#include <string>
+#include <chrono>
 
 class RTPortfolio;
 
-class perfRatios;
+struct perfRatios;
 
 class CLIPrinter {
 public:
