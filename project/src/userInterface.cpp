@@ -170,14 +170,7 @@ void CLIManager::savePF() const {
     }
 }
 
-void CLIManager::interpretInputRow(const string& inputRow) { 
-    //user command interpreter
-    istringstream iss(inputRow);
-    string cmd;
-    if (!(iss >> cmd)) return;
-
-    ranges::transform(cmd, cmd.begin(), ::tolower);
-
+void CLIManager::executeCommand(const string& cmd, istringstream& iss) {
     if (cmd == "exit") {
         failed = true;
     }
@@ -303,4 +296,17 @@ void CLIManager::interpretInputRow(const string& inputRow) {
     else {
         cout << "Unknown command.\n";
     }
+}
+
+void CLIManager::interpretInputRow(const string& inputRow) {
+    istringstream iss(inputRow);
+    string cmd;
+
+    if (!(iss >> cmd)) return; //empty row
+
+    ranges::transform(cmd, cmd.begin(), ::tolower);
+
+    executeCommand(cmd, iss);
+
+    cout << "\n";
 }

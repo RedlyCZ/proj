@@ -6,6 +6,7 @@
 #include "CLIPrinter.hpp"
 #include <string>
 #include <chrono>
+#include <sstream>
 
 class CLIManager {
 private:
@@ -25,6 +26,7 @@ private:
 	void monteCarloChance(instrumentType type, const std::string& ticker, int duration, double price, bool hit) const;
 	void loadPF(const std::chrono::year_month_day& date);
 	void savePF() const;
+	void executeCommand(const std::string& cmd, std::istringstream& iss);
 public:
 	void interpretInputRow(const std::string& inputRow);
 	bool is_failed() const noexcept {

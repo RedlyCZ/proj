@@ -12,7 +12,7 @@ using json = nlohmann::json;
 using namespace std;
 
 
-int RTPortfolio::findTickerIndex(const string& newTicker, const vector<instrumentPosition>& container) {
+int RTPortfolio::findTickerIndex(const string& newTicker, const vector<instrumentPosition>& container) const noexcept{
 	for (int i = 0; i < container.size(); i++) {
 		if (container[i].ticker == newTicker) {
 			return i;
@@ -72,7 +72,7 @@ bool RTPortfolio::withdrawCash(double quantity) {
 	return true;
 }
 
-vector<instrumentPosition>* RTPortfolio::getContainer(instrumentType type) {
+vector<instrumentPosition>* RTPortfolio::getContainer(instrumentType type) noexcept{
 	switch (type) {
 	case instrumentType::STOCK:
 		return &stocks;
@@ -84,7 +84,7 @@ vector<instrumentPosition>* RTPortfolio::getContainer(instrumentType type) {
 	return nullptr;
 }
 
-double RTPortfolio::getActivePrice(instrumentType type, const string& ticker) {
+double RTPortfolio::getActivePrice(instrumentType type, const string& ticker) const {
 	switch (type) {
 	case instrumentType::STOCK: {
 		StockDataChannel stockApi;
@@ -305,7 +305,7 @@ bool RTPortfolio::loadActiveYields() {
 	}
 }
 
-bool RTPortfolio::saveSnapshot() {
+bool RTPortfolio::saveSnapshot() const {
 	Snapshoter snp(storagePath);
 	if (snp.writeSnapshot(*this)) {
 		return true;
