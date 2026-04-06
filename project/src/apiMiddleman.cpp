@@ -20,8 +20,7 @@ const string finnhubApiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
 const string twelveDataApiKey = "4818bbe7eae44f9f9953f16e09e15398";
 const string apiNinjaApiKey = "edYYHgdoAENWYD8N1i9k2rWLmlN5QtXPHU4zO3dY";
 const string fredApiKey = "bd4aa411be07e1d514736502aabfe3a6";
-const string fmpApiKey = "Dgolm4HnDmWEvMhJQ19rCsUhzL4KmR6R";
-
+const string alphaVantageApiKey = "OFL9DV5REHHVTTXT";
 
 //helper methods
 
@@ -137,6 +136,50 @@ double TwelveDataChannel::getHistoricalPriceByDate(const string& ticker, const c
         cout << "Error - TwelveData getHistoricalPriceByDate failed with status: " << r.status_code << "\n";
     }
     return -1.0;
+}
+
+//very limited on free tier (only 25 calls per day), but couldt find dividends elsewhere
+double AlphaVantageChannel::getStockDividend(const string& ticker) {
+    string url = "https://www.alphavantage.co/query";
+
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"function", "OVERVIEW"},
+            {"symbol", ticker},
+            {"apikey", alphaVantageApiKey}
+        }
+    );
+
+    if (r.status_code == 200) {
+        try {
+            json data = json::parse(r.text);
+
+            // Alpha Vantage returns an empty JSON if the rate limit is hit
+            if (data.empty() || data.contains("Information")) {
+                cout << "Alpha Vantage Rate Limit Hit or Error: " << r.text << "\n";
+                return -1.0;
+            }
+
+            if (data.contains("ForwardAnnualDividendRate")) {
+                string divStr = data["ForwardAnnualDividendRate"];
+
+                // If it's a non-dividend stock, it often returns "None" or "0"
+                if (divStr == "None" || divStr == "-") return 0.0;
+
+                return stod(divStr);
+            }
+            return 0.0;
+        }
+        catch (...) {
+            cout << "Error - Alpha Vantage parsing failed for " << ticker << "\n";
+            return -1.0;
+        }
+    }
+    else {
+        cout << "Error 10 - Alpha Vantage HTTP Status: " << r.status_code << "\n";
+        return -1.0;
+    }
 }
 
 //Frankfurter, completely free API, used for forex data
@@ -304,52 +347,7 @@ double BinanceChannel::getHistoricalPriceByDate(const string& cryptoName, const 
 }
 
 
-//Financial Modeling Prep, free API 250 calls per day, used for some advanced stock data (like divi)
-double FinancialModelingPrepChannel::getStockDividend(const string& ticker) {
-    string url = "https://financialmodelingprep.com/stable/dividends";
 
-    cpr::Response r = cpr::Get(
-        cpr::Url{ url },
-        cpr::Parameters{
-            {"symbol", ticker},
-            {"apikey", fmpApiKey}
-        }
-    );
-
-    if (r.status_code == 200) {
-        json data = json::parse(r.text);
-
-        if (data.is_array() && !data.empty()) {
-
-            double amount = data[0].value("dividend", 0.0);
-
-            string frequency = data[0].value("frequency", "Annual");
-
-            int payoutsPerYear = 1;
-
-            transform(frequency.begin(), frequency.end(), frequency.begin(), [](unsigned char c) { return tolower(c); });
-
-            if (frequency == "quarterly" || frequency == "quarter") {
-                payoutsPerYear = 4;
-            }
-            else if (frequency == "monthly" || frequency == "month") {
-                payoutsPerYear = 12;
-            }
-            else if (frequency == "semi-annual" || frequency == "semiannual" || frequency == "semi-annually") {
-                payoutsPerYear = 2;
-            }
-
-            return amount * payoutsPerYear;
-        }
-        else {
-            return 0.0;
-        }
-    }
-    else {
-        cout << "Error 10 - Loading dividend problem FinancialModelingPrepChannel\n";
-    }
-    return -1.0;
-}
 
 //FRED API - St. Louis Fed. Free, high limits. Best for Interest Rates.
 

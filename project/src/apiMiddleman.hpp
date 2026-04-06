@@ -34,10 +34,11 @@ public:
 	double getHistoricalPriceByDate(const std::string& cryptoName, const std::chrono::year_month_day& date);
 };
 
-class FinancialModelingPrepChannel {
+class AlphaVantageChannel {
 public:
 	double getStockDividend(const std::string& ticker);
 };
+
 
 class FredChannel {
 private:
@@ -62,7 +63,7 @@ public:
 		}
 	}
 	double getActiveDividend(const std::string& ticker) {
-		FinancialModelingPrepChannel apisrc;
+		AlphaVantageChannel apisrc;
 		try {
 			return apisrc.getStockDividend(ticker);
 		}
@@ -94,6 +95,7 @@ class CashDataChannel {
 public:
 	double getConversionRate(const std::string& ticker) {
 		FrankfurterChannel apisrc;
+		if (ticker == "USD") return 1.0;
 		try {
 			return apisrc.conversionRate(ticker);
 		}
@@ -112,6 +114,7 @@ public:
 	}
 	double getHistoricalPriceByDate(const std::string& ticker, const std::chrono::year_month_day& date) {
 		FrankfurterChannel apisrc;
+		if (ticker == "USD") return 1.0;
 		try {
 			return apisrc.getHistoricalRateByDate(ticker, date);
 		}
