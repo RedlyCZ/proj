@@ -13,6 +13,7 @@
 class FinnHubChannel {
 public:
 	double getActivePrice(const std::string& ticker);
+	double getActiveDividend(const std::string& ticker);
 };
 
 class TwelveDataChannel {
@@ -33,12 +34,6 @@ public:
 	std::vector<double> getHistoricalPrices(const std::string& cryptoName, int days);
 	double getHistoricalPriceByDate(const std::string& cryptoName, const std::chrono::year_month_day& date);
 };
-
-class AlphaVantageChannel {
-public:
-	double getStockDividend(const std::string& ticker);
-};
-
 
 class FredChannel {
 private:
@@ -63,9 +58,9 @@ public:
 		}
 	}
 	double getActiveDividend(const std::string& ticker) {
-		AlphaVantageChannel apisrc;
+		FinnHubChannel apisrc;
 		try {
-			return apisrc.getStockDividend(ticker);
+			return apisrc.getActiveDividend(ticker);
 		}
 		catch (...) {
 			return -1;

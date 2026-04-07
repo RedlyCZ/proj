@@ -12,7 +12,6 @@ FetchContent_Declare(json GIT_REPOSITORY https://github.com/nlohmann/json.git GI
 FetchContent_MakeAvailable(json)
 
 if(WIN32)
-    # Na Windows vynuť použití jejich systémového SSL (aby to nechtělo certifikáty)
     set(CPR_FORCE_WINSSL_BACKEND ON CACHE BOOL "" FORCE)
     set(CPR_FORCE_OPENSSL_BACKEND OFF CACHE BOOL "" FORCE)
     set(CPR_ENABLE_SSL ON CACHE BOOL "" FORCE)

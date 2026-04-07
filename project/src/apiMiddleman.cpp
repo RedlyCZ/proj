@@ -20,7 +20,6 @@ const string finnhubApiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
 const string twelveDataApiKey = "4818bbe7eae44f9f9953f16e09e15398";
 const string apiNinjaApiKey = "edYYHgdoAENWYD8N1i9k2rWLmlN5QtXPHU4zO3dY";
 const string fredApiKey = "bd4aa411be07e1d514736502aabfe3a6";
-const string alphaVantageApiKey = "OFL9DV5REHHVTTXT";
 
 //helper methods
 
@@ -58,6 +57,45 @@ double FinnHubChannel::getActivePrice(const string& ticker) {
         cout << "Error 1 - getActivePrice\n";
     }
     return -1;
+}
+
+double FinnHubChannel::getActiveDividend(const string& ticker) {
+    string url = "https://finnhub.io/api/v1/stock/metric";
+
+    cpr::Response r = cpr::Get(
+        cpr::Url{ url },
+        cpr::Parameters{
+            {"symbol", ticker},
+            {"metric", "all"},
+            {"token", finnhubApiKey}
+        }
+    );
+
+    if (r.status_code == 200) {
+        try {
+            json data = json::parse(r.text);
+
+            // Check if the metric object and dividendPerShareAnnual exist
+            if (data.contains("metric") && data["metric"].contains("dividendPerShareAnnual")) {
+                if (data["metric"]["dividendPerShareAnnual"].is_null()) {
+                    return 0.0; // No dividend
+                }
+                return data["metric"]["dividendPerShareAnnual"].get<double>();
+            }
+            else {
+                // If it's a valid response but no dividend metric is found, yield is 0
+                return 0.0;
+            }
+        }
+        catch (...) {
+            cout << "Error - FinnHub metric parsing failed for " << ticker << "\n";
+            return -1.0;
+        }
+    }
+    else {
+        cout << "Error 10 - FinnHub Metric HTTP Status: " << r.status_code << "\n";
+        return -1.0;
+    }
 }
 
 //TwelveData offers free calls to stock price history (which finnhub blocks only for premium)
@@ -136,50 +174,6 @@ double TwelveDataChannel::getHistoricalPriceByDate(const string& ticker, const c
         cout << "Error - TwelveData getHistoricalPriceByDate failed with status: " << r.status_code << "\n";
     }
     return -1.0;
-}
-
-//very limited on free tier (only 25 calls per day), but couldt find dividends elsewhere
-double AlphaVantageChannel::getStockDividend(const string& ticker) {
-    string url = "https://www.alphavantage.co/query";
-
-    cpr::Response r = cpr::Get(
-        cpr::Url{ url },
-        cpr::Parameters{
-            {"function", "OVERVIEW"},
-            {"symbol", ticker},
-            {"apikey", alphaVantageApiKey}
-        }
-    );
-
-    if (r.status_code == 200) {
-        try {
-            json data = json::parse(r.text);
-
-            // Alpha Vantage returns an empty JSON if the rate limit is hit
-            if (data.empty() || data.contains("Information")) {
-                cout << "Alpha Vantage Rate Limit Hit or Error: " << r.text << "\n";
-                return -1.0;
-            }
-
-            if (data.contains("ForwardAnnualDividendRate")) {
-                string divStr = data["ForwardAnnualDividendRate"];
-
-                // If it's a non-dividend stock, it often returns "None" or "0"
-                if (divStr == "None" || divStr == "-") return 0.0;
-
-                return stod(divStr);
-            }
-            return 0.0;
-        }
-        catch (...) {
-            cout << "Error - Alpha Vantage parsing failed for " << ticker << "\n";
-            return -1.0;
-        }
-    }
-    else {
-        cout << "Error 10 - Alpha Vantage HTTP Status: " << r.status_code << "\n";
-        return -1.0;
-    }
 }
 
 //Frankfurter, completely free API, used for forex data
