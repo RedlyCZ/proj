@@ -79,22 +79,20 @@ perfRatios FinancialCalculator::fixedYield(const RTPortfolio& portfolio, double 
     return result;
 }
 
-double FinancialCalculator::totalPerformance(const RTPortfolio& pf) {
-    //simple total portfolio profit calc
+std::optional<double> FinancialCalculator::totalPerformance(const RTPortfolio& pf) {
     double netInvested = pf.totalDeposited - pf.totalWithdrawn;
 
-    if (netInvested <= 0.0) { //zero div prevention
-        return 0.0;
+    if (netInvested <= 0.0) {
+        return std::nullopt;
     }
 
     double totalValueNow = totalValue(pf);
-
     return (totalValueNow - netInvested) / netInvested;
 }
 
-double FinancialCalculator::calculateRSI(instrumentType type, const string& ticker, int period) {
+std::optional<double> FinancialCalculator::calculateRSI(instrumentType type, const string& ticker, int period) {
     if (period <= 0) {
-        return -1.0;
+        return std::nullopt;
     }
 
     vector<double> prices;
@@ -112,12 +110,12 @@ double FinancialCalculator::calculateRSI(instrumentType type, const string& tick
         break;
     }
     default: {
-        return -1.0;
+        return std::nullopt;
     }
     }
 
     if (prices.size() <= period) {
-        return -1.0;
+        return std::nullopt;
     }
 
     double avgGain = 0.0;
@@ -136,7 +134,6 @@ double FinancialCalculator::calculateRSI(instrumentType type, const string& tick
     avgGain /= period;
     avgLoss /= period;
 
-    // wilders smoothing
     for (size_t i = period + 1; i < prices.size(); ++i) {
         double change = prices[i] - prices[i - 1];
         double gain = (change > 0) ? change : 0.0;
@@ -146,24 +143,21 @@ double FinancialCalculator::calculateRSI(instrumentType type, const string& tick
         avgLoss = ((avgLoss * (period - 1)) + loss) / period;
     }
 
-    //rsi computation
     if (avgLoss == 0.0) {
-        return 100.0; // if no losses RSI is by definition 100
+        return 100.0;
     }
 
     double rs = avgGain / avgLoss;
     return (100.0 - (100.0 / (1.0 + rs)));
 }
 
-double FinancialCalculator::monteCarloChance(instrumentType type, const string& ticker, int duration, double price, bool hit) {
-    //this method is kind of longer than i would like, but decomposition would make it even harder to read
-
+std::optional<double> FinancialCalculator::monteCarloChance(instrumentType type, const string& ticker, int duration, double price, bool hit) {
     if (duration <= 0 || price <= 0.0) {
-        return -1.0;
+        return std::nullopt;
     }
 
     vector<double> histPrices;
-    int fetchDays = 252; // one year data is ideal for approximation
+    int fetchDays = 252;
 
     switch (type) {
     case(instrumentType::STOCK): {
@@ -177,19 +171,17 @@ double FinancialCalculator::monteCarloChance(instrumentType type, const string& 
         break;
     }
     case(instrumentType::CASH): {
-        // Cash historicals are not yet implemented in CashDataChannel
-        return -1.0;
+        return std::nullopt;
     }
     default: {
-        return -1.0;
+        return std::nullopt;
     }
     }
 
     if (histPrices.size() < 2) {
-        return -1.0; //not enough data
+        return std::nullopt;
     }
 
-    // calculate historical metrics
     double sumReturns = 0.0;
     vector<double> returns;
     returns.reserve(histPrices.size() - 1);
@@ -208,7 +200,6 @@ double FinancialCalculator::monteCarloChance(instrumentType type, const string& 
     double variance = varianceSum / returns.size();
     double stdDev = sqrt(variance);
 
-    // monte carlo itself
     int numSimulations = 10000;
     int successCount = 0;
     double currentPrice = histPrices.back();
@@ -218,7 +209,6 @@ double FinancialCalculator::monteCarloChance(instrumentType type, const string& 
     std::mt19937 gen(std::random_device{}());
     std::normal_distribution<double> dist(0.0, 1.0);
 
-    //simulation
     for (int i = 0; i < numSimulations; ++i) {
         double simulatedPrice = currentPrice;
         bool pathHit = false;
@@ -228,7 +218,6 @@ double FinancialCalculator::monteCarloChance(instrumentType type, const string& 
             simulatedPrice *= std::exp(drift + stdDev * z);
 
             if (hit) {
-                // hit checked mid simulation
                 if ((isTargetAbove && simulatedPrice >= price) ||
                     (!isTargetAbove && simulatedPrice <= price)) {
                     pathHit = true;
@@ -237,13 +226,12 @@ double FinancialCalculator::monteCarloChance(instrumentType type, const string& 
             }
         }
 
-        //evaluation
-        if (hit) { //hit only
+        if (hit) {
             if (pathHit) {
                 successCount++;
             }
         }
-        else { //price above in the end
+        else {
             if ((isTargetAbove && simulatedPrice >= price) ||
                 (!isTargetAbove && simulatedPrice <= price)) {
                 successCount++;
@@ -253,8 +241,8 @@ double FinancialCalculator::monteCarloChance(instrumentType type, const string& 
     return static_cast<double>(successCount) / numSimulations;
 }
 
-int FinancialCalculator::bollingerOverbought(instrumentType type, const string& ticker) {
-    int period = 20; // Standard Bollinger Band lookback period
+std::optional<int> FinancialCalculator::bollingerOverbought(instrumentType type, const string& ticker) {
+    int period = 20;
     vector<double> prices;
 
     switch (type) {
@@ -269,25 +257,23 @@ int FinancialCalculator::bollingerOverbought(instrumentType type, const string& 
         break;
     }
     case(instrumentType::CASH): {
-        return -10;
+        return std::nullopt;
     }
     default: {
-        return -10;
+        return std::nullopt;
     }
     }
 
     if (prices.size() < period) {
-        return -10; //not enough data
+        return std::nullopt;
     }
 
-    //calculate SMA
     double sum = 0.0;
     for (double p : prices) {
         sum += p;
     }
     double sma = sum / prices.size();
 
-    //calcualte standard deviation
     double varianceSum = 0.0;
     for (double p : prices) {
         varianceSum += (p - sma) * (p - sma);
@@ -295,23 +281,22 @@ int FinancialCalculator::bollingerOverbought(instrumentType type, const string& 
     double variance = varianceSum / prices.size();
     double stdDev = std::sqrt(variance);
 
-    // bollinger eval
     double currentPrice = prices.back();
 
     if (currentPrice > sma + (2.0 * stdDev)) {
-        return 2;  // Very overbought
+        return 2;
     }
     else if (currentPrice > sma + stdDev) {
-        return 1;  // Slightly overbought
+        return 1;
     }
     else if (currentPrice < sma - (2.0 * stdDev)) {
-        return -2; // Very oversold
+        return -2;
     }
     else if (currentPrice < sma - stdDev) {
-        return -1; // Slightly oversold
+        return -1;
     }
 
-    return 0; // Fair value
+    return 0;
 }
 
 perfRatios FinancialCalculator::backtestPerformace(const RTPortfolio& portfolio, const std::chrono::year_month_day& startDate) {
@@ -345,19 +330,19 @@ perfRatios FinancialCalculator::backtestPerformace(const RTPortfolio& portfolio,
     return result;
 }
 
-double FinancialCalculator::backtestTotalPerformance(const RTPortfolio& pf, const std::chrono::year_month_day& startDate) {
+std::optional<double> FinancialCalculator::backtestTotalPerformance(const RTPortfolio& pf, const std::chrono::year_month_day& startDate) {
     double totalActiveValue = 0.0;
     double totalHistoricalValue = 0.0;
 
     auto accumulateValues = [&totalActiveValue, &totalHistoricalValue, &startDate](auto& container, auto& apiChannel) {
         for (const auto& pos : container) {
             auto histPriceOpt = apiChannel.getHistoricalPriceByDate(pos.ticker, startDate);
-            if (histPriceOpt && *histPriceOpt > 0.0) { // safely unwrap and validate
+            if (histPriceOpt && *histPriceOpt > 0.0) {
                 totalActiveValue += (pos.activePrice * pos.quantity);
                 totalHistoricalValue += (*histPriceOpt * pos.quantity);
             }
         }
-    };
+        };
 
     StockDataChannel stockApi;
     accumulateValues(pf.stocks, stockApi);
@@ -368,8 +353,8 @@ double FinancialCalculator::backtestTotalPerformance(const RTPortfolio& pf, cons
     CryptoDataChannel cryptoApi;
     accumulateValues(pf.cryptos, cryptoApi);
 
-    if (totalHistoricalValue <= 0.0) { //zero div prevention
-        return 0.0;
+    if (totalHistoricalValue <= 0.0) {
+        return std::nullopt;
     }
 
     return totalActiveValue / totalHistoricalValue;

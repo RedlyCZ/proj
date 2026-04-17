@@ -46,7 +46,8 @@ void CLIManager::showAggregates() const {
     double stocksVal = calc.valueOfType(portfolio.stocks);
     double cashesVal = calc.valueOfType(portfolio.cashes);
     double cryptoVal = calc.valueOfType(portfolio.cryptos);
-    double totalPerf = calc.totalPerformance(portfolio);
+
+    double totalPerf = calc.totalPerformance(portfolio).value_or(0.0);
 
     printer.printCumulativeMetrics(totalVal, stocksVal, cashesVal, cryptoVal, totalPerf);
 }
@@ -70,7 +71,8 @@ void CLIManager::backtestPortfolio(const year_month_day& timeSince) const {
     CLIPrinter printer;
 
     perfRatios perf = calc.backtestPerformace(portfolio, timeSince);
-    double totalPerf = calc.backtestTotalPerformance(portfolio, timeSince);
+
+    double totalPerf = calc.backtestTotalPerformance(portfolio, timeSince).value_or(0.0);
 
     printer.printBacktestResult(perf, totalPerf, timeSince);
 }
@@ -114,9 +116,10 @@ void CLIManager::calcRSI(instrumentType type, const string& ticker, int period) 
     FinancialCalculator calc;
     CLIPrinter printer;
 
-    double rsi = calc.calculateRSI(type, ticker, period);
-    if (rsi >= 0) {
-        printer.printIndicatorRSI(ticker, rsi);
+    auto rsiOpt = calc.calculateRSI(type, ticker, period);
+
+    if (rsiOpt) {
+        printer.printIndicatorRSI(ticker, *rsiOpt);
     }
     else {
         cout << "Failed to calculate RSI for " << ticker << ".\n";
@@ -127,9 +130,10 @@ void CLIManager::calcBollinger(instrumentType type, const string& ticker) const 
     FinancialCalculator calc;
     CLIPrinter printer;
 
-    int bollingerState = calc.bollingerOverbought(type, ticker);
-    if (bollingerState != -10) {
-        printer.printIndicatorBollinger(ticker, bollingerState);
+    auto bollingerStateOpt = calc.bollingerOverbought(type, ticker);
+
+    if (bollingerStateOpt) {
+        printer.printIndicatorBollinger(ticker, *bollingerStateOpt);
     }
     else {
         cout << "Failed to calculate Bollinger Bands for " << ticker << ".\n";
@@ -140,9 +144,10 @@ void CLIManager::monteCarloChance(instrumentType type, const string& ticker, int
     FinancialCalculator calc;
     CLIPrinter printer;
 
-    double chance = calc.monteCarloChance(type, ticker, duration, targetPrice, hit);
-    if (chance >= 0) {
-        printer.printMonteCarloResult(ticker, duration, targetPrice, chance);
+    auto chanceOpt = calc.monteCarloChance(type, ticker, duration, targetPrice, hit);
+
+    if (chanceOpt) {
+        printer.printMonteCarloResult(ticker, duration, targetPrice, *chanceOpt);
     }
     else {
         cout << "Failed to run Monte Carlo simulation for " << ticker << ".\n";
