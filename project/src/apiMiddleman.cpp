@@ -10,16 +10,46 @@
 #include <thread>
 #include <chrono>
 #include <format>
+#include <fstream>
+#include <optional>
 
 
 using json = nlohmann::json;
 using namespace std;
 
-//apikeys (im sure they are safe here)
-const string finnhubApiKey = "d5h90phr01qqequ12ip0d5h90phr01qqequ12ipg";
-const string twelveDataApiKey = "4818bbe7eae44f9f9953f16e09e15398";
-const string apiNinjaApiKey = "edYYHgdoAENWYD8N1i9k2rWLmlN5QtXPHU4zO3dY";
-const string fredApiKey = "bd4aa411be07e1d514736502aabfe3a6";
+//loads apikeys from config.json
+struct ApiKeys {
+    string finnhub;
+    string twelveData;
+    string apiNinja;
+    string fred;
+
+    ApiKeys() {
+        std::ifstream configFile("config.json");
+        if (configFile.is_open()) {
+            try {
+                json configJson = json::parse(configFile);
+                finnhub = configJson.value("finnhubApiKey", "");
+                twelveData = configJson.value("twelveDataApiKey", "");
+                apiNinja = configJson.value("apiNinjaApiKey", "");
+                fred = configJson.value("fredApiKey", "");
+            }
+            catch (const json::parse_error& e) {
+                cerr << "Error parsing config.json: " << e.what() << "\n";
+            }
+        }
+        else {
+            cerr << "Warning: Could not open config.json. Ensure it's in the working directory.\n";
+        }
+    }
+};
+
+
+//to load keys only once
+const ApiKeys& getApiKeys() {
+    static ApiKeys keys;
+    return keys;
+}
 
 //helper methods
 
@@ -35,19 +65,19 @@ long long ymdToMsEpoch(const std::chrono::year_month_day& ymd) {
 
 //FinnHub, free API 60 calls per minute, used for stock data
 
-double FinnHubChannel::getActivePrice(const string& ticker) {
+std::optional<double> FinnHubChannel::getActivePrice(const string& ticker) {
     string url = "https://finnhub.io/api/v1/quote";
     cpr::Response r = cpr::Get(
         cpr::Url{ url },
         cpr::Parameters{
             {"symbol", ticker},
-            {"token", finnhubApiKey}
+            {"token", getApiKeys().finnhub}
         }
     );
     if (r.status_code == 200) { //success
         json data = json::parse(r.text);
         if (data.contains("c")) { //success
-            return data["c"];
+            return data["c"].get<double>();
         }
         else {
             cout << "Error 2 - getActivePrice\n";
@@ -56,10 +86,10 @@ double FinnHubChannel::getActivePrice(const string& ticker) {
     else {
         cout << "Error 1 - getActivePrice\n";
     }
-    return -1;
+    return std::nullopt;
 }
 
-double FinnHubChannel::getActiveDividend(const string& ticker) {
+std::optional<double> FinnHubChannel::getActiveDividend(const string& ticker) {
     string url = "https://finnhub.io/api/v1/stock/metric";
 
     cpr::Response r = cpr::Get(
@@ -67,7 +97,7 @@ double FinnHubChannel::getActiveDividend(const string& ticker) {
         cpr::Parameters{
             {"symbol", ticker},
             {"metric", "all"},
-            {"token", finnhubApiKey}
+            {"token", getApiKeys().finnhub}
         }
     );
 
@@ -89,17 +119,17 @@ double FinnHubChannel::getActiveDividend(const string& ticker) {
         }
         catch (...) {
             cout << "Error - FinnHub metric parsing failed for " << ticker << "\n";
-            return -1.0;
+            return std::nullopt;
         }
     }
     else {
         cout << "Error 10 - FinnHub Metric HTTP Status: " << r.status_code << "\n";
-        return -1.0;
+        return std::nullopt;
     }
 }
 
 //TwelveData offers free calls to stock price history (which finnhub blocks only for premium)
-std::vector<double> TwelveDataChannel::getHistoricalPrices(const string& ticker, int days) {
+std::optional<std::vector<double>> TwelveDataChannel::getHistoricalPrices(const string& ticker, int days) {
     std::vector<double> prices;
     string url = "https://api.twelvedata.com/time_series";
 
@@ -109,7 +139,7 @@ std::vector<double> TwelveDataChannel::getHistoricalPrices(const string& ticker,
             {"symbol", ticker},
             {"interval", "1day"},
             {"outputsize", std::to_string(days)},
-            {"apikey", twelveDataApiKey}
+            {"apikey", getApiKeys().twelveData}
         }
     );
 
@@ -118,7 +148,7 @@ std::vector<double> TwelveDataChannel::getHistoricalPrices(const string& ticker,
 
         if (data.contains("status") && data["status"] == "error") {
             cout << "TwelveData Error: " << data["message"] << "\n";
-            return prices;
+            return std::nullopt;
         }
 
         if (data.contains("values") && data["values"].is_array()) {
@@ -128,6 +158,7 @@ std::vector<double> TwelveDataChannel::getHistoricalPrices(const string& ticker,
                 }
             }
             std::reverse(prices.begin(), prices.end()); //orders wrong so we reverse
+            return prices;
         }
         else {
             cout << "Error - TwelveData getHistoricalPrices: 'values' key missing.\n";
@@ -137,10 +168,10 @@ std::vector<double> TwelveDataChannel::getHistoricalPrices(const string& ticker,
         cout << "Error - TwelveData getHistoricalPrices failed with status: " << r.status_code << "\n";
     }
 
-    return prices;
+    return std::nullopt;
 }
 
-double TwelveDataChannel::getHistoricalPriceByDate(const string& ticker, const chrono::year_month_day& date) {
+std::optional<double> TwelveDataChannel::getHistoricalPriceByDate(const string& ticker, const chrono::year_month_day& date) {
     string url = "https://api.twelvedata.com/time_series";
     string dateStr = formatYMD(date);
 
@@ -152,7 +183,7 @@ double TwelveDataChannel::getHistoricalPriceByDate(const string& ticker, const c
             {"interval", "1day"},
             {"outputsize", "1"},
             {"end_date", dateStr + " 23:59:59"},
-            {"apikey", twelveDataApiKey}
+            {"apikey", getApiKeys().twelveData}
         }
     );
 
@@ -173,12 +204,12 @@ double TwelveDataChannel::getHistoricalPriceByDate(const string& ticker, const c
     else {
         cout << "Error - TwelveData getHistoricalPriceByDate failed with status: " << r.status_code << "\n";
     }
-    return -1.0;
+    return std::nullopt;
 }
 
 //Frankfurter, completely free API, used for forex data
 
-double FrankfurterChannel::conversionRate(const string& baseCurrency, const string& targetCurrency) {
+std::optional<double> FrankfurterChannel::conversionRate(const string& baseCurrency, const string& targetCurrency) {
     string url = "https://api.frankfurter.app/latest";
     cpr::Response r = cpr::Get(
         cpr::Url{ url },
@@ -190,7 +221,7 @@ double FrankfurterChannel::conversionRate(const string& baseCurrency, const stri
     if (r.status_code == 200) {
         json data = json::parse(r.text);
         if (data.contains("rates") && data["rates"].contains(targetCurrency)) {
-            return data["rates"][targetCurrency];
+            return data["rates"][targetCurrency].get<double>();
         }
         else {
             cout << "Error 4 - conversion rate.\n";
@@ -199,10 +230,10 @@ double FrankfurterChannel::conversionRate(const string& baseCurrency, const stri
     else {
         cout << "Error 5 - conversion rate\n";
     }
-    return -1;
+    return std::nullopt;
 }
 
-double FrankfurterChannel::getHistoricalRateByDate(const string& baseCurrency, const chrono::year_month_day& date, const string& targetCurrency) {
+std::optional<double> FrankfurterChannel::getHistoricalRateByDate(const string& baseCurrency, const chrono::year_month_day& date, const string& targetCurrency) {
     string dateStr = formatYMD(date);
     string url = "https://api.frankfurter.app/" + dateStr;
 
@@ -217,7 +248,7 @@ double FrankfurterChannel::getHistoricalRateByDate(const string& baseCurrency, c
     if (r.status_code == 200) {
         json data = json::parse(r.text);
         if (data.contains("rates") && data["rates"].contains(targetCurrency)) {
-            return data["rates"][targetCurrency];
+            return data["rates"][targetCurrency].get<double>();
         }
         else {
             cout << "Error 6 - historical conversion rate key missing.\n";
@@ -226,7 +257,7 @@ double FrankfurterChannel::getHistoricalRateByDate(const string& baseCurrency, c
     else {
         cout << "Error 7 - historical conversion rate failed with status: " << r.status_code << "\n";
     }
-    return -1.0;
+    return std::nullopt;
 }
 
 
@@ -234,7 +265,7 @@ double FrankfurterChannel::getHistoricalRateByDate(const string& baseCurrency, c
 // Binance API, free, no auth required for basic prices, 1200 calls per minute
 // Uses tickers (e.g., BTC, ETH) paired with USDT
 
-double BinanceChannel::getActivePrice(const string& ticker) {
+std::optional<double> BinanceChannel::getActivePrice(const string& ticker) {
     // Append USDT to the ticker (e.g., BTC -> BTCUSDT)
     string symbol = ticker + "USDT";
 
@@ -262,10 +293,10 @@ double BinanceChannel::getActivePrice(const string& ticker) {
     else {
         cout << "Error - Binance getActivePrice failed with status: " << r.status_code << "\n";
     }
-    return -1;
+    return std::nullopt;
 }
 
-std::vector<double> BinanceChannel::getHistoricalPrices(const string& cryptoName, int days) {
+std::optional<std::vector<double>> BinanceChannel::getHistoricalPrices(const string& cryptoName, int days) {
     std::vector<double> prices;
 
     string symbol = cryptoName + "USDT";
@@ -291,6 +322,7 @@ std::vector<double> BinanceChannel::getHistoricalPrices(const string& cryptoName
                     prices.push_back(stod(closePriceStr));
                 }
             }
+            return prices;
         }
         else {
             cout << "Error - Binance getHistoricalPrices: Expected an array of arrays.\n";
@@ -300,10 +332,10 @@ std::vector<double> BinanceChannel::getHistoricalPrices(const string& cryptoName
         cout << "Error - Binance getHistoricalPrices failed with status: " << r.status_code << "\n";
     }
 
-    return prices;
+    return std::nullopt;
 }
 
-double BinanceChannel::getHistoricalPriceByDate(const string& cryptoName, const chrono::year_month_day& date) {
+std::optional<double> BinanceChannel::getHistoricalPriceByDate(const string& cryptoName, const chrono::year_month_day& date) {
     string symbol = cryptoName + "USDT";
     transform(symbol.begin(), symbol.end(), symbol.begin(), ::toupper);
 
@@ -337,7 +369,7 @@ double BinanceChannel::getHistoricalPriceByDate(const string& cryptoName, const 
     else {
         cout << "Error - Binance getHistoricalPriceByDate failed with status: " << r.status_code << "\n";
     }
-    return -1.0;
+    return std::nullopt;
 }
 
 
@@ -366,12 +398,12 @@ string FredChannel::resolveSeriesId(const string& ticker) {
 }
 
 
-double FredChannel::getInterestRate(const string& ticker) {
+std::optional<double> FredChannel::getInterestRate(const string& ticker) {
     string seriesId = resolveSeriesId(ticker);
 
     if (seriesId.empty()) {
         cout << "Error 20 - FRED: Currency/Country not mapped for interest rate.\n";
-        return -1.0;
+        return std::nullopt;
     }
 
     string url = "https://api.stlouisfed.org/fred/series/observations";
@@ -380,7 +412,7 @@ double FredChannel::getInterestRate(const string& ticker) {
         cpr::Url{ url },
         cpr::Parameters{
             {"series_id", seriesId},
-            {"api_key", fredApiKey},
+            {"api_key", getApiKeys().fred},
             {"file_type", "json"},
             {"sort_order", "desc"}, // Get latest first
             {"limit", "1"}          // Only need the latest
@@ -397,7 +429,7 @@ double FredChannel::getInterestRate(const string& ticker) {
                 // FRED returns "." if data is missing for that specific date
                 if (valStr == ".") {
                     cout << "Error 21 - FRED: Data point is missing/incomplete.\n";
-                    return -1.0;
+                    return std::nullopt;
                 }
 
                 return stod(valStr);
@@ -410,5 +442,5 @@ double FredChannel::getInterestRate(const string& ticker) {
     else {
         cout << "Error 23 - FRED request failed. Status: " << r.status_code << "\n";
     }
-    return -1.0;
+    return std::nullopt;
 }

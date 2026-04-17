@@ -30,7 +30,7 @@ class RTPortfolio {
 private:
 	int findTickerIndex(const std::string& newTicker, const std::vector<instrumentPosition>& container) const noexcept;
 	std::vector<instrumentPosition>* getContainer(instrumentType type) noexcept;
-	double getActivePrice(instrumentType type, const std::string& ticker) const;
+	std::optional<double> getActivePrice(instrumentType type, const std::string& ticker) const;
 	bool loadActivePricesStocks(); //return false if api failed
 	bool loadActivePricesCash();
 	bool loadActivePricesCrypto();

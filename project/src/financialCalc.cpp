@@ -98,22 +98,21 @@ double FinancialCalculator::calculateRSI(instrumentType type, const string& tick
     }
 
     vector<double> prices;
-    //fetching more history for a stabilization (wilders smoothing)
     int fetchDays = period * 4;
 
     switch (type) {
     case(instrumentType::STOCK): {
         StockDataChannel stockApi;
-        prices = stockApi.getHistoricalPrices(ticker, fetchDays);
+        prices = stockApi.getHistoricalPrices(ticker, fetchDays).value_or(std::vector<double>{});
         break;
     }
     case(instrumentType::CRYPTO): {
         CryptoDataChannel cryptoApi;
-        prices = cryptoApi.getHistoricalPrices(ticker, fetchDays);
+        prices = cryptoApi.getHistoricalPrices(ticker, fetchDays).value_or(std::vector<double>{});
         break;
     }
     default: {
-        return -1.0; //not implemented, RSI cant be negative
+        return -1.0;
     }
     }
 
@@ -169,12 +168,12 @@ double FinancialCalculator::monteCarloChance(instrumentType type, const string& 
     switch (type) {
     case(instrumentType::STOCK): {
         StockDataChannel stockApi;
-        histPrices = stockApi.getHistoricalPrices(ticker, fetchDays);
+        histPrices = stockApi.getHistoricalPrices(ticker, fetchDays).value_or(std::vector<double>{});
         break;
     }
     case(instrumentType::CRYPTO): {
         CryptoDataChannel cryptoApi;
-        histPrices = cryptoApi.getHistoricalPrices(ticker, fetchDays);
+        histPrices = cryptoApi.getHistoricalPrices(ticker, fetchDays).value_or(std::vector<double>{});
         break;
     }
     case(instrumentType::CASH): {
@@ -261,12 +260,12 @@ int FinancialCalculator::bollingerOverbought(instrumentType type, const string& 
     switch (type) {
     case(instrumentType::STOCK): {
         StockDataChannel stockApi;
-        prices = stockApi.getHistoricalPrices(ticker, period);
+        prices = stockApi.getHistoricalPrices(ticker, period).value_or(std::vector<double>{});
         break;
     }
     case(instrumentType::CRYPTO): {
         CryptoDataChannel cryptoApi;
-        prices = cryptoApi.getHistoricalPrices(ticker, period);
+        prices = cryptoApi.getHistoricalPrices(ticker, period).value_or(std::vector<double>{});
         break;
     }
     case(instrumentType::CASH): {
@@ -327,19 +326,19 @@ perfRatios FinancialCalculator::backtestPerformace(const RTPortfolio& portfolio,
 
     StockDataChannel stockApi;
     for (const auto& pos : portfolio.stocks) {
-        double histPrice = stockApi.getHistoricalPriceByDate(pos.ticker, startDate);
+        double histPrice = stockApi.getHistoricalPriceByDate(pos.ticker, startDate).value_or(-1.0);
         result.stockReturns[pos.ticker] = calculateReturn(pos.activePrice, histPrice);
     }
 
     CashDataChannel cashApi;
     for (const auto& pos : portfolio.cashes) {
-        double histPrice = cashApi.getHistoricalPriceByDate(pos.ticker, startDate);
+        double histPrice = cashApi.getHistoricalPriceByDate(pos.ticker, startDate).value_or(-1.0);
         result.cashReturns[pos.ticker] = calculateReturn(pos.activePrice, histPrice);
     }
 
     CryptoDataChannel cryptoApi;
     for (const auto& pos : portfolio.cryptos) {
-        double histPrice = cryptoApi.getHistoricalPriceByDate(pos.ticker, startDate);
+        double histPrice = cryptoApi.getHistoricalPriceByDate(pos.ticker, startDate).value_or(-1.0);
         result.cryptoReturns[pos.ticker] = calculateReturn(pos.activePrice, histPrice);
     }
 
@@ -352,13 +351,13 @@ double FinancialCalculator::backtestTotalPerformance(const RTPortfolio& pf, cons
 
     auto accumulateValues = [&totalActiveValue, &totalHistoricalValue, &startDate](auto& container, auto& apiChannel) {
         for (const auto& pos : container) {
-            double histPrice = apiChannel.getHistoricalPriceByDate(pos.ticker, startDate);
-            if (histPrice > 0.0) { // only calculate if we successfully fetched the historical price
+            auto histPriceOpt = apiChannel.getHistoricalPriceByDate(pos.ticker, startDate);
+            if (histPriceOpt && *histPriceOpt > 0.0) { // safely unwrap and validate
                 totalActiveValue += (pos.activePrice * pos.quantity);
-                totalHistoricalValue += (histPrice * pos.quantity);
+                totalHistoricalValue += (*histPriceOpt * pos.quantity);
             }
         }
-        };
+    };
 
     StockDataChannel stockApi;
     accumulateValues(pf.stocks, stockApi);
