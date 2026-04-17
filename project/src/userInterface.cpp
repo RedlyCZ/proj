@@ -43,9 +43,10 @@ void CLIManager::showAggregates() const {
     CLIPrinter printer;
 
     double totalVal = calc.totalValue(portfolio);
-    double stocksVal = calc.valueOfType(portfolio.stocks);
-    double cashesVal = calc.valueOfType(portfolio.cashes);
-    double cryptoVal = calc.valueOfType(portfolio.cryptos);
+
+    double stocksVal = calc.valueOfType(portfolio.getStocks());
+    double cashesVal = calc.valueOfType(portfolio.getCashes());
+    double cryptoVal = calc.valueOfType(portfolio.getCryptos());
 
     double totalPerf = calc.totalPerformance(portfolio).value_or(0.0);
 

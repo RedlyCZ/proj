@@ -12,11 +12,13 @@ using json = nlohmann::json;
 using namespace std;
 
 
-int RTPortfolio::findTickerIndex(const string& newTicker, const vector<instrumentPosition>& container) const noexcept{
-	for (int i = 0; i < container.size(); i++) {
-		if (container[i].ticker == newTicker) {
-			return i;
+int RTPortfolio::findTickerIndex(const string& newTicker, const vector<instrumentPosition>& container) const noexcept {
+	int index = 0;
+	for (auto&& pos : container) {
+		if (pos.ticker == newTicker) {
+			return index;
 		}
+		index++;
 	}
 	return -1;
 }
@@ -211,8 +213,7 @@ double RTPortfolio::sellInstrument(instrumentType type, const string& newTicker,
 
 bool RTPortfolio::loadActivePricesStocks() {
 	StockDataChannel apiSource;
-	for (size_t i = 0; i < stocks.size(); i++) {
-		instrumentPosition& loadPos = stocks[i];
+	for (auto&& loadPos : stocks) {
 		auto loadedVal = apiSource.getActivePrice(loadPos.ticker);
 		if (!loadedVal) {
 			cout << "Error, failed to load stock price\n";
@@ -225,8 +226,7 @@ bool RTPortfolio::loadActivePricesStocks() {
 
 bool RTPortfolio::loadActivePricesCash() {
 	CashDataChannel apiSource;
-	for (size_t i = 0; i < cashes.size(); i++) {
-		instrumentPosition& loadPos = cashes[i];
+	for (auto&& loadPos : cashes) {
 		if (loadPos.ticker == "USD") {
 			loadPos.activePrice = 1.0;
 			continue;
@@ -243,8 +243,7 @@ bool RTPortfolio::loadActivePricesCash() {
 
 bool RTPortfolio::loadActivePricesCrypto() {
 	CryptoDataChannel apiSource;
-	for (size_t i = 0; i < cryptos.size(); i++) {
-		instrumentPosition& loadPos = cryptos[i];
+	for (auto&& loadPos : cryptos) {
 		auto loadedVal = apiSource.getActivePrice(loadPos.ticker);
 		if (!loadedVal) {
 			cout << "Error, failed to load crypto price\n";
@@ -266,8 +265,7 @@ bool RTPortfolio::loadActivePrices() {
 
 bool RTPortfolio::loadActiveYieldsStocks() {
 	StockDataChannel apiSource;
-	for (size_t i = 0; i < stocks.size(); i++) {
-		instrumentPosition& loadPos = stocks[i];
+	for (auto&& loadPos : stocks) {
 		auto optDividend = apiSource.getActiveDividend(loadPos.ticker);
 		auto optPrice = apiSource.getActivePrice(loadPos.ticker);
 
@@ -283,8 +281,7 @@ bool RTPortfolio::loadActiveYieldsStocks() {
 
 bool RTPortfolio::loadActiveYieldsCash() {
 	CashDataChannel apiSource;
-	for (size_t i = 0; i < cashes.size(); i++) {
-		instrumentPosition& loadPos = cashes[i];
+	for (auto&& loadPos : cashes) {
 		auto loadedVal = apiSource.getInterestRate(loadPos.ticker);
 		if (!loadedVal) {
 			cout << "Error, failed to load interest rate\n";

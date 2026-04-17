@@ -27,45 +27,54 @@ namespace {
 
 void CLIPrinter::printStockPositions(const RTPortfolio& pf, bool perf) {
 	cout << "Stocks:\n";
+
+	const auto& stocks = pf.getStocks();
+
 	if (perf) {
-		for (size_t i = 0; i < pf.stocks.size(); i++) {
-			double performance = pf.stocks[i].activePrice / pf.stocks[i].averageBuyPrice;
-			cout << "Ticker: " << pf.stocks[i].ticker << " Active Price: " << pf.stocks[i].activePrice << " Performance: " << performance << " Value: " << pf.stocks[i].quantity*(pf.stocks[i].activePrice) << "\n";
+		for (size_t i = 0; i < stocks.size(); i++) {
+			double performance = stocks[i].activePrice / stocks[i].averageBuyPrice;
+			cout << "Ticker: " << stocks[i].ticker << " Active Price: " << stocks[i].activePrice << " Performance: " << performance << " Value: " << stocks[i].quantity * (stocks[i].activePrice) << "\n";
 		}
 	}
 	else {
-		for (size_t i = 0; i < pf.stocks.size(); i++) {
-			cout << "Ticker: " << pf.stocks[i].ticker << " Active Price: " << pf.stocks[i].activePrice << " Active Yield: " << pf.stocks[i].yield << " Quantity: " << pf.stocks[i].quantity << "\n";
+		for (size_t i = 0; i < stocks.size(); i++) {
+			cout << "Ticker: " << stocks[i].ticker << " Active Price: " << stocks[i].activePrice << " Active Yield: " << stocks[i].yield << " Quantity: " << stocks[i].quantity << "\n";
 		}
 	}
 }
 
 void CLIPrinter::printCashPositions(const RTPortfolio& pf, bool perf) {
 	cout << "Cashes:\n";
+	
+	const auto& cashes = pf.getStocks();
+
 	if (perf) {
-		for (size_t i = 0; i < pf.cashes.size(); i++) {
-			double performance = pf.cashes[i].activePrice / pf.cashes[i].averageBuyPrice;
-			cout << "Ticker: " << pf.cashes[i].ticker << " Active Price: " << pf.cashes[i].activePrice << " Performance: " << performance << " Value: " << pf.cashes[i].quantity * (pf.cashes[i].activePrice) << "\n";
+		for (size_t i = 0; i < cashes.size(); i++) {
+			double performance = cashes[i].activePrice / cashes[i].averageBuyPrice;
+			cout << "Ticker: " << cashes[i].ticker << " Active Price: " << cashes[i].activePrice << " Performance: " << performance << " Value: " << cashes[i].quantity * (cashes[i].activePrice) << "\n";
 		}
 	}
 	else {
-		for (size_t i = 0; i < pf.cashes.size(); i++) {
-			cout << "Ticker: " << pf.cashes[i].ticker << " Active Price: " << pf.cashes[i].activePrice << " Active Yield: " << pf.cashes[i].yield << " Quantity: " << pf.cashes[i].quantity << "\n";
+		for (size_t i = 0; i < cashes.size(); i++) {
+			cout << "Ticker: " << cashes[i].ticker << " Active Price: " << cashes[i].activePrice << " Active Yield: " << cashes[i].yield << " Quantity: " << cashes[i].quantity << "\n";
 		}
 	}
 }
 
 void CLIPrinter::printCryptoPositions(const RTPortfolio& pf, bool perf) {
 	cout << "Crypto:\n";
+
+	const auto& cryptos = pf.getStocks();
+
 	if (perf) {
-		for (size_t i = 0; i < pf.cryptos.size(); i++) {
-			double performance = pf.cryptos[i].activePrice / pf.cryptos[i].averageBuyPrice;
-			cout << "Name: " << pf.cryptos[i].ticker << " Active Price: " << pf.cryptos[i].activePrice << " Performance: " << performance << " Value: " << pf.cryptos[i].quantity * (pf.cryptos[i].activePrice) << "\n";
+		for (size_t i = 0; i < cryptos.size(); i++) {
+			double performance = cryptos[i].activePrice / cryptos[i].averageBuyPrice;
+			cout << "Name: " << cryptos[i].ticker << " Active Price: " << cryptos[i].activePrice << " Performance: " << performance << " Value: " << cryptos[i].quantity * (cryptos[i].activePrice) << "\n";
 		}
 	}
 	else {
-		for (size_t i = 0; i < pf.cryptos.size(); i++) {
-			cout << "Name: " << pf.cryptos[i].ticker << " Active Price: " << pf.cryptos[i].activePrice << " Quantity: " << pf.cryptos[i].quantity << "\n";
+		for (size_t i = 0; i < cryptos.size(); i++) {
+			cout << "Name: " << cryptos[i].ticker << " Active Price: " << cryptos[i].activePrice << " Quantity: " << cryptos[i].quantity << "\n";
 		}
 	}
 }

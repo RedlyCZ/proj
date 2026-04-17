@@ -16,9 +16,9 @@ double FinancialCalculator::valueOfType(const vector<instrumentPosition>& contai
 
 double FinancialCalculator::totalValue(const RTPortfolio& portfolio) {
     double total = 0.0;
-    total += valueOfType(portfolio.stocks);
-    total += valueOfType(portfolio.cashes);
-    total += valueOfType(portfolio.cryptos);
+    total += valueOfType(portfolio.getStocks());
+    total += valueOfType(portfolio.getCashes());
+    total += valueOfType(portfolio.getCryptos());
     return total;
 }
 
@@ -32,15 +32,15 @@ perfRatios FinancialCalculator::performance(const RTPortfolio& portfolio) {
         return (active / avgBuy);
         };
 
-    for (const auto& pos : portfolio.stocks) {
+    for (const auto& pos : portfolio.getStocks()) {
         result.stockReturns[pos.ticker] = calculateReturn(pos.activePrice, pos.averageBuyPrice);
     }
 
-    for (const auto& pos : portfolio.cashes) {
+    for (const auto& pos : portfolio.getCashes()) {
         result.cashReturns[pos.ticker] = calculateReturn(pos.activePrice, pos.averageBuyPrice);
     }
 
-    for (const auto& pos : portfolio.cryptos) {
+    for (const auto& pos : portfolio.getCryptos()) {
         result.cryptoReturns[pos.ticker] = calculateReturn(pos.activePrice, pos.averageBuyPrice);
     }
 
@@ -63,16 +63,16 @@ perfRatios FinancialCalculator::fixedYield(const RTPortfolio& portfolio, double 
         };
 
     //containing reinvestments
-    for (const auto& pos : portfolio.stocks) {
+    for (const auto& pos : portfolio.getStocks()) {
         result.stockReturns[pos.ticker] = calculateCompoundYield(pos.yield, years, compoundsPerYear);
     }
 
-    for (const auto& pos : portfolio.cashes) {
+    for (const auto& pos : portfolio.getCashes()) {
         result.cashReturns[pos.ticker] = calculateCompoundYield(pos.yield, years, compoundsPerYear);
     }
 
     //Didnt find api for stacking yields, so this goes without calculation, but if yields ARE given, will work
-    for (const auto& pos : portfolio.cryptos) {
+    for (const auto& pos : portfolio.getCryptos()) {
         result.cryptoReturns[pos.ticker] = calculateCompoundYield(pos.yield, years, compoundsPerYear);
     }
 
@@ -80,7 +80,7 @@ perfRatios FinancialCalculator::fixedYield(const RTPortfolio& portfolio, double 
 }
 
 std::optional<double> FinancialCalculator::totalPerformance(const RTPortfolio& pf) {
-    double netInvested = pf.totalDeposited - pf.totalWithdrawn;
+    double netInvested = pf.getTotalDeposited() - pf.getTotalWithdrawn();
 
     if (netInvested <= 0.0) {
         return std::nullopt;
@@ -310,19 +310,19 @@ perfRatios FinancialCalculator::backtestPerformace(const RTPortfolio& portfolio,
         };
 
     StockDataChannel stockApi;
-    for (const auto& pos : portfolio.stocks) {
+    for (const auto& pos : portfolio.getStocks()) {
         double histPrice = stockApi.getHistoricalPriceByDate(pos.ticker, startDate).value_or(-1.0);
         result.stockReturns[pos.ticker] = calculateReturn(pos.activePrice, histPrice);
     }
 
     CashDataChannel cashApi;
-    for (const auto& pos : portfolio.cashes) {
+    for (const auto& pos : portfolio.getCashes()) {
         double histPrice = cashApi.getHistoricalPriceByDate(pos.ticker, startDate).value_or(-1.0);
         result.cashReturns[pos.ticker] = calculateReturn(pos.activePrice, histPrice);
     }
 
     CryptoDataChannel cryptoApi;
-    for (const auto& pos : portfolio.cryptos) {
+    for (const auto& pos : portfolio.getCryptos()) {
         double histPrice = cryptoApi.getHistoricalPriceByDate(pos.ticker, startDate).value_or(-1.0);
         result.cryptoReturns[pos.ticker] = calculateReturn(pos.activePrice, histPrice);
     }
@@ -345,13 +345,13 @@ std::optional<double> FinancialCalculator::backtestTotalPerformance(const RTPort
         };
 
     StockDataChannel stockApi;
-    accumulateValues(pf.stocks, stockApi);
+    accumulateValues(pf.getStocks(), stockApi);
 
     CashDataChannel cashApi;
-    accumulateValues(pf.cashes, cashApi);
+    accumulateValues(pf.getCashes(), cashApi);
 
     CryptoDataChannel cryptoApi;
-    accumulateValues(pf.cryptos, cryptoApi);
+    accumulateValues(pf.getCryptos(), cryptoApi);
 
     if (totalHistoricalValue <= 0.0) {
         return std::nullopt;
