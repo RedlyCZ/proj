@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <chrono>
 #include <optional>
+#include <unordered_map>
+#include <functional>
 
 using namespace std;
 using namespace std::chrono;
@@ -164,11 +166,8 @@ void CLIManager::loadPF(const year_month_day& date) {
     }
 }
 
-void CLIManager::savePF() const {
-    // Requires a mutable cast or portfolio to be modified if saveSnapshot wasn't const. 
-    // Since saveSnapshot operates on the instance, we cast constness away locally just for the CLI call,
-    // assuming saving doesn't structurally alter the portfolio state.
-    if (const_cast<RTPortfolio&>(portfolio).saveSnapshot()) {
+void CLIManager::savePF() {
+    if (portfolio.saveSnapshot()) {
         cout << "Snapshot saved successfully.\n";
     }
     else {

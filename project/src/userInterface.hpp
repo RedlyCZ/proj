@@ -25,7 +25,7 @@ private:
 	void calcBollinger(instrumentType type, const std::string& ticker) const;
 	void monteCarloChance(instrumentType type, const std::string& ticker, int duration, double price, bool hit) const;
 	void loadPF(const std::chrono::year_month_day& date);
-	void savePF() const;
+	void savePF();
 	void executeCommand(const std::string& cmd, std::istringstream& iss);
 public:
 	void interpretInputRow(const std::string& inputRow);
