@@ -12,6 +12,7 @@
 #include <format>
 #include <fstream>
 #include <optional>
+#include <cctype>
 
 
 using json = nlohmann::json;
@@ -269,7 +270,7 @@ std::optional<double> BinanceChannel::getActivePrice(const string& ticker) {
     // Append USDT to the ticker (e.g., BTC -> BTCUSDT)
     string symbol = ticker + "USDT";
 
-    transform(symbol.begin(), symbol.end(), symbol.begin(), ::toupper);
+    transform(symbol.begin(), symbol.end(), symbol.begin(), [](unsigned char c) { return std::toupper(c); });
 
     string url = "https://api.binance.com/api/v3/ticker/price";
 
@@ -300,7 +301,7 @@ std::optional<std::vector<double>> BinanceChannel::getHistoricalPrices(const str
     std::vector<double> prices;
 
     string symbol = cryptoName + "USDT";
-    transform(symbol.begin(), symbol.end(), symbol.begin(), ::toupper);
+    transform(symbol.begin(), symbol.end(), symbol.begin(), [](unsigned char c) { return std::toupper(c); });
 
     string url = "https://api.binance.com/api/v3/klines";
 
@@ -337,7 +338,7 @@ std::optional<std::vector<double>> BinanceChannel::getHistoricalPrices(const str
 
 std::optional<double> BinanceChannel::getHistoricalPriceByDate(const string& cryptoName, const chrono::year_month_day& date) {
     string symbol = cryptoName + "USDT";
-    transform(symbol.begin(), symbol.end(), symbol.begin(), ::toupper);
+    transform(symbol.begin(), symbol.end(), symbol.begin(), [](unsigned char c) { return std::toupper(c); });
 
     string url = "https://api.binance.com/api/v3/klines";
 

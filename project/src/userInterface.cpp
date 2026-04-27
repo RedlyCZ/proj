@@ -8,6 +8,7 @@
 #include <optional>
 #include <unordered_map>
 #include <functional>
+#include <cctype>
 
 using namespace std;
 using namespace std::chrono;
@@ -16,7 +17,7 @@ using namespace std::chrono;
 namespace {
     // convert string to type
     optional<instrumentType> parseInstrumentType(string str) {
-        ranges::transform(str, str.begin(), ::tolower);
+        ranges::transform(str, str.begin(), [](unsigned char c) { return std::tolower(c); });
         if (str == "stock") return instrumentType::STOCK;
         if (str == "cash") return instrumentType::CASH;
         if (str == "crypto") return instrumentType::CRYPTO;
@@ -35,7 +36,7 @@ namespace {
 
     // bool parsing
     bool parseBool(string str) {
-        ranges::transform(str, str.begin(), ::tolower);
+        ranges::transform(str, str.begin(), [](unsigned char c) { return std::tolower(c); });
         return (str == "true" || str == "1" || str == "yes");
     }
 }
@@ -309,7 +310,7 @@ void CLIManager::interpretInputRow(const string& inputRow) {
 
     if (!(iss >> cmd)) return; //empty row
 
-    ranges::transform(cmd, cmd.begin(), ::tolower);
+    ranges::transform(cmd, cmd.begin(), [](unsigned char c) { return std::tolower(c); });
 
     executeCommand(cmd, iss);
 
