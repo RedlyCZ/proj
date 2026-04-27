@@ -33,12 +33,18 @@ void CLIPrinter::printStockPositions(const RTPortfolio& pf, bool perf) {
 	if (perf) {
 		for (size_t i = 0; i < stocks.size(); i++) {
 			double performance = stocks[i].activePrice / stocks[i].averageBuyPrice;
-			cout << "Ticker: " << stocks[i].ticker << " Active Price: " << stocks[i].activePrice << " Performance: " << performance << " Value: " << stocks[i].quantity * (stocks[i].activePrice) << "\n";
+			cout << "Ticker: " << stocks[i].ticker
+				<< " Active Price: " << fixed << setprecision(2) << stocks[i].activePrice
+				<< " Performance: " << fixed << setprecision(2) << (performance * 100.0) << "%"
+				<< " Value: " << fixed << setprecision(2) << (stocks[i].quantity * stocks[i].activePrice) << "\n";
 		}
 	}
 	else {
 		for (size_t i = 0; i < stocks.size(); i++) {
-			cout << "Ticker: " << stocks[i].ticker << " Active Price: " << stocks[i].activePrice << " Active Yield: " << stocks[i].yield << " Quantity: " << stocks[i].quantity << "\n";
+			cout << "Ticker: " << stocks[i].ticker
+				<< " Active Price: " << fixed << setprecision(2) << stocks[i].activePrice
+				<< " Active Yield: " << fixed << setprecision(4) << stocks[i].yield
+				<< " Quantity: " << fixed << setprecision(4) << stocks[i].quantity << "\n";
 		}
 	}
 }
@@ -51,12 +57,18 @@ void CLIPrinter::printCashPositions(const RTPortfolio& pf, bool perf) {
 	if (perf) {
 		for (size_t i = 0; i < cashes.size(); i++) {
 			double performance = cashes[i].activePrice / cashes[i].averageBuyPrice;
-			cout << "Ticker: " << cashes[i].ticker << " Active Price: " << cashes[i].activePrice << " Performance: " << performance << " Value: " << cashes[i].quantity * (cashes[i].activePrice) << "\n";
+			cout << "Ticker: " << cashes[i].ticker
+				<< " Active Price: " << fixed << setprecision(2) << cashes[i].activePrice
+				<< " Performance: " << fixed << setprecision(2) << (performance * 100.0) << "%"
+				<< " Value: " << fixed << setprecision(2) << (cashes[i].quantity * cashes[i].activePrice) << "\n";
 		}
 	}
 	else {
 		for (size_t i = 0; i < cashes.size(); i++) {
-			cout << "Ticker: " << cashes[i].ticker << " Active Price: " << cashes[i].activePrice << " Active Yield: " << cashes[i].yield << " Quantity: " << cashes[i].quantity << "\n";
+			cout << "Ticker: " << cashes[i].ticker
+				<< " Active Price: " << fixed << setprecision(2) << cashes[i].activePrice
+				<< " Active Yield: " << fixed << setprecision(4) << cashes[i].yield
+				<< " Quantity: " << fixed << setprecision(2) << cashes[i].quantity << "\n";
 		}
 	}
 }
@@ -69,12 +81,17 @@ void CLIPrinter::printCryptoPositions(const RTPortfolio& pf, bool perf) {
 	if (perf) {
 		for (size_t i = 0; i < cryptos.size(); i++) {
 			double performance = cryptos[i].activePrice / cryptos[i].averageBuyPrice;
-			cout << "Name: " << cryptos[i].ticker << " Active Price: " << cryptos[i].activePrice << " Performance: " << performance << " Value: " << cryptos[i].quantity * (cryptos[i].activePrice) << "\n";
+			cout << "Name: " << cryptos[i].ticker
+				<< " Active Price: " << fixed << setprecision(2) << cryptos[i].activePrice
+				<< " Performance: " << fixed << setprecision(2) << (performance * 100.0) << "%"
+				<< " Value: " << fixed << setprecision(2) << (cryptos[i].quantity * cryptos[i].activePrice) << "\n";
 		}
 	}
 	else {
 		for (size_t i = 0; i < cryptos.size(); i++) {
-			cout << "Name: " << cryptos[i].ticker << " Active Price: " << cryptos[i].activePrice << " Quantity: " << cryptos[i].quantity << "\n";
+			cout << "Name: " << cryptos[i].ticker
+				<< " Active Price: " << fixed << setprecision(2) << cryptos[i].activePrice
+				<< " Quantity: " << fixed << setprecision(6) << cryptos[i].quantity << "\n";
 		}
 	}
 }
@@ -93,11 +110,11 @@ void CLIPrinter::printPortfolioPositions(const RTPortfolio& pf, bool performance
 void CLIPrinter::printCumulativeMetrics(double totalValue, double stocksVal, double cashesVal, double cryptoVal, double totalPerf) {
 	cout << "Portfolio statistics\n";
 	cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n";
-	cout << "Total portfolio value (in USD):         " << totalValue << "\n";
-	cout << "    - value of STOCKS:                  " << stocksVal << "\n";
-	cout << "    - value of CASH:                    " << cashesVal << "\n";
-	cout << "    - value of CRYPTO:                  " << cryptoVal << "\n";
-	cout << "Total perfomance                        " << totalPerf << "\n";
+	cout << "Total portfolio value (in USD):         " << fixed << setprecision(2) << totalValue << "\n";
+	cout << "    - value of STOCKS:                  " << fixed << setprecision(2) << stocksVal << "\n";
+	cout << "    - value of CASH:                    " << fixed << setprecision(2) << cashesVal << "\n";
+	cout << "    - value of CRYPTO:                  " << fixed << setprecision(2) << cryptoVal << "\n";
+	cout << "Total perfomance                        " << fixed << setprecision(2) << (totalPerf * 100.0) << " %\n";
 }
 
 void CLIPrinter::printPerformanceReport(const perfRatios& perf) {
