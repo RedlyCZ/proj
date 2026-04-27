@@ -46,7 +46,7 @@ void CLIPrinter::printStockPositions(const RTPortfolio& pf, bool perf) {
 void CLIPrinter::printCashPositions(const RTPortfolio& pf, bool perf) {
 	cout << "Cashes:\n";
 	
-	const auto& cashes = pf.getStocks();
+	const auto& cashes = pf.getCashes();
 
 	if (perf) {
 		for (size_t i = 0; i < cashes.size(); i++) {
@@ -64,7 +64,7 @@ void CLIPrinter::printCashPositions(const RTPortfolio& pf, bool perf) {
 void CLIPrinter::printCryptoPositions(const RTPortfolio& pf, bool perf) {
 	cout << "Crypto:\n";
 
-	const auto& cryptos = pf.getStocks();
+	const auto& cryptos = pf.getCryptos();
 
 	if (perf) {
 		for (size_t i = 0; i < cryptos.size(); i++) {
