@@ -180,6 +180,9 @@ void CLIManager::executeCommand(const string& cmd, istringstream& iss) {
     if (cmd == "exit") {
         failed = true;
     }
+    else if (cmd == "help" || cmd == "?") {
+        printHelp();
+    }
     else if (cmd == "update") {
         string target;
         iss >> target;
@@ -315,4 +318,36 @@ void CLIManager::interpretInputRow(const string& inputRow) {
     executeCommand(cmd, iss);
 
     cout << "\n";
+}
+
+void CLIManager::printHelp() const {
+    cout << "\n=================== COMMAND REFERENCE ===================\n";
+    cout << "NOTE: Ensure 'config.json' with valid API keys is in the app directory.\n";
+    cout << "* <type> must be: stock, cash, or crypto.\n";
+    cout << "---------------------------------------------------------\n\n";
+
+    cout << "1. Money & Trading:\n";
+    cout << "  deposit <amount>                                  - Add USD to portfolio\n";
+    cout << "  withdraw <amount>                                 - Remove USD from portfolio\n";
+    cout << "  buy <type> <ticker> <quantity>                    - Buy an asset\n";
+    cout << "  sell <type> <ticker> <quantity> [close:true/false]- Sell an asset\n\n";
+
+    cout << "2. Data & Overview:\n";
+    cout << "  update <prices|yields>                            - Fetch fresh API data\n";
+    cout << "  show <aggregates|positions|performance>           - Print portfolio stats\n\n";
+
+    cout << "3. Analysis & Prediction:\n";
+    cout << "  backtest <YYYY-MM-DD>                             - Run historical backtest\n";
+    cout << "  yield <years>                                     - Predict compound growth\n";
+    cout << "  rsi <type> <ticker> <period>                      - Calculate RSI indicator\n";
+    cout << "  bollinger <type> <ticker>                         - Check Bollinger Bands\n";
+    cout << "  montecarlo <type> <ticker> <days> <price> <hit>   - Run Monte Carlo sim (hit:true/false)\n\n";
+
+    cout << "4. File Management & System:\n";
+    cout << "  setpath <folder_path>                             - Set save location\n";
+    cout << "  save                                              - Save snapshot (JSON)\n";
+    cout << "  load <YYYY-MM-DD>                                 - Load snapshot\n";
+    cout << "  help, ?                                           - Show this message\n";
+    cout << "  exit                                              - Quit application\n";
+    cout << "=========================================================\n";
 }

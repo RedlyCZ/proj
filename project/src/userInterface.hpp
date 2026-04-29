@@ -27,6 +27,7 @@ private:
 	void loadPF(const std::chrono::year_month_day& date);
 	void savePF();
 	void executeCommand(const std::string& cmd, std::istringstream& iss);
+	void printHelp() const;
 public:
 	void interpretInputRow(const std::string& inputRow);
 	bool is_failed() const noexcept {
