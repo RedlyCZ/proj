@@ -42,6 +42,7 @@ string Snapshoter::currentDate() {
 bool Snapshoter::writeSnapshot(const RTPortfolio& portfolio) {                  //false if failed
     if (!folderExists()) {
         if (!createStorage()) {             //we dont have folder and its creation failed
+            cout << "No snapshot folder set. Use setpath <path> to properly set it!\n";       //implementing this without print here would take a lot of work (another std::expected, enum class, etc)
             return false;
         }
     }
@@ -65,11 +66,14 @@ bool Snapshoter::writeSnapshot(const RTPortfolio& portfolio) {                  
     return true;
 }
 
-optional<RTPortfolio> Snapshoter::readSnapshot(const chrono::year_month_day& searchedDate) {
+expected<RTPortfolio, SnapshotError> Snapshoter::readSnapshot(const chrono::year_month_day& searchedDate) {
     string stringDate = format("{}", searchedDate); //bit ineffective here, but one string doesnt kill anyone
     std::filesystem::path snapshotPath = std::filesystem::path(storagePath) / stringDate;
-    if(!folderExists() || !fs::exists(snapshotPath)) {
-        return nullopt;
+    if(!folderExists()) {
+        return std::unexpected(SnapshotError::FOLDER_NOT_FOUND);
+    }
+    if (!fs::exists(snapshotPath)) {
+        return std::unexpected(SnapshotError::FILE_NOT_FOUND);
     }
     ifstream readFile(snapshotPath);
     try {
@@ -86,7 +90,7 @@ optional<RTPortfolio> Snapshoter::readSnapshot(const chrono::year_month_day& sea
         return pfReturn;
     }
     catch (...) {
-        return nullopt;
+        return std::unexpected(SnapshotError::JSON_CORRUPTED);
     }
 }
 

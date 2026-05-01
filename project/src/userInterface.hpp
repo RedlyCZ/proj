@@ -4,6 +4,7 @@
 #include "runtimePortfolio.hpp"
 #include "financialCalc.hpp"
 #include "CLIPrinter.hpp"
+#include "apiMiddleman.hpp"
 #include <string>
 #include <chrono>
 #include <sstream>
@@ -28,6 +29,7 @@ private:
 	void savePF();
 	void executeCommand(const std::string& cmd, std::istringstream& iss);
 	void printHelp() const;
+	void getPrice(instrumentType type, const std::string& ticker) const;
 public:
 	void interpretInputRow(const std::string& inputRow);
 	bool is_failed() const noexcept {

@@ -9,6 +9,8 @@
 
 class Snapshoter;
 
+enum class SnapshotError;
+
 constexpr int supportedTypesCount = 3;
 
 enum class instrumentType {
@@ -64,7 +66,7 @@ public:
 	bool loadActivePrices();	//return false if loading failed
 	bool loadActiveYields();
 	bool saveSnapshot() const;
-	bool loadSnapshot(std::chrono::year_month_day searchedDate);
+	SnapshotError loadSnapshot(std::chrono::year_month_day searchedDate);
 };
 
 #endif

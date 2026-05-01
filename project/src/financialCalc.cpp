@@ -157,7 +157,7 @@ std::optional<double> FinancialCalculator::monteCarloChance(instrumentType type,
     }
 
     vector<double> histPrices;
-    int fetchDays = 252;
+    int fetchDays = 365;        //nmb of days in a year (could be 252 cause thats the nmb of trading days in year for US exchanges)
 
     switch (type) {
     case(instrumentType::STOCK): {

@@ -13,6 +13,15 @@
 using namespace std;
 using namespace std::chrono;
 
+
+enum class SnapshotError {
+    FILE_NOT_FOUND,
+    FOLDER_NOT_FOUND,
+    JSON_CORRUPTED,
+    NONE_ERROR
+};
+
+
 // helper functions
 namespace {
     // convert string to type
@@ -71,6 +80,12 @@ void CLIManager::showPerformance() const {
 }
 
 void CLIManager::backtestPortfolio(const year_month_day& timeSince) const {
+    auto today = year_month_day{ floor<days>(system_clock::now()) };
+    if (timeSince > today) {
+        cout << "Error: Cannot backtest from a future date.\n";
+        return;
+    }
+
     FinancialCalculator calc;
     CLIPrinter printer;
 
@@ -159,11 +174,25 @@ void CLIManager::monteCarloChance(instrumentType type, const string& ticker, int
 }
 
 void CLIManager::loadPF(const year_month_day& date) {
-    if (portfolio.loadSnapshot(date)) {
+    if (portfolio.loadSnapshot(date) == SnapshotError::NONE_ERROR) {
         cout << "Snapshot loaded successfully.\n";
     }
     else {
         cout << "Failed to load snapshot.\n";
+    }
+    switch (portfolio.loadSnapshot(date)) {
+    case(SnapshotError::NONE_ERROR):
+        cout << "Snapshot loaded successfully.\n";
+        break;
+    case(SnapshotError::FOLDER_NOT_FOUND):
+        cout << "No snapshot folder set. Use setpath <path> to properly set it!";
+        break;
+    case(SnapshotError::FILE_NOT_FOUND):
+        cout << "No snapshot corresponding to this date found!";
+        break;
+    case(SnapshotError::JSON_CORRUPTED):
+        cout << "Snapshot corrupted, unable to read its data!";
+        break;
     }
 }
 
@@ -173,6 +202,30 @@ void CLIManager::savePF() {
     }
     else {
         cout << "Failed to save snapshot.\n";
+    }
+}
+
+void CLIManager::getPrice(instrumentType type, const string& ticker) const {
+    optional<double> price = nullopt;
+
+    if (type == instrumentType::STOCK) {
+        StockDataChannel channel;
+        price = channel.getActivePrice(ticker);
+    }
+    else if (type == instrumentType::CASH) {
+        CashDataChannel channel;
+        price = channel.getConversionRate(ticker);
+    }
+    else if (type == instrumentType::CRYPTO) {
+        CryptoDataChannel channel;
+        price = channel.getActivePrice(ticker);
+    }
+
+    if (price) {
+        cout << "The current price of " << ticker << " is " << *price << " USD.\n";
+    }
+    else {
+        cout << "Failed to fetch the active price for " << ticker << ".\n";
     }
 }
 
@@ -193,6 +246,21 @@ void CLIManager::executeCommand(const string& cmd, istringstream& iss) {
         else if (target == "yields") {
             if (portfolio.loadActiveYields()) cout << "Yields updated successfully.\n";
             else cout << "Warning: Some yields failed to update.\n";
+        }
+    }
+    else if (cmd == "price") {
+        string typeStr, ticker;
+        if (iss >> typeStr >> ticker) {
+            auto type = parseInstrumentType(typeStr);
+            if (type) {
+                getPrice(*type, ticker);
+            }
+            else {
+                cout << "Invalid instrument type. Use: stock, cash, crypto.\n";
+            }
+        }
+        else {
+            cout << "Usage: price <type> <ticker>\n";
         }
     }
     else if (cmd == "show") {
@@ -333,6 +401,7 @@ void CLIManager::printHelp() const {
     cout << "  sell <type> <ticker> <quantity> [close:true/false]- Sell an asset\n\n";
 
     cout << "2. Data & Overview:\n";
+    cout << "  price <type> <ticker>                             - Get active price of an asset\n";
     cout << "  update <prices|yields>                            - Fetch fresh API data\n";
     cout << "  show <aggregates|positions|performance>           - Print portfolio stats\n\n";
 

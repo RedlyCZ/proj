@@ -7,6 +7,7 @@
 #include <iostream>
 #include <nlohmann/json.hpp>
 #include <optional>
+#include <expected>
 
 using json = nlohmann::json;
 using namespace std;
@@ -309,16 +310,16 @@ bool RTPortfolio::saveSnapshot() const {
 	return false;
 }
 
-bool RTPortfolio::loadSnapshot(chrono::year_month_day date) {
+SnapshotError RTPortfolio::loadSnapshot(chrono::year_month_day date) {
 	Snapshoter snp(storagePath);
-	optional<RTPortfolio> loaded = snp.readSnapshot(date);
-	if (loaded == nullopt) {
-		return false;
+	expected<RTPortfolio, SnapshotError> loaded = snp.readSnapshot(date);
+	if (!loaded) {
+		return loaded.error();
 	}
 	stocks = loaded.value().stocks;
 	cashes = loaded.value().cashes;
 	cryptos = loaded.value().cryptos;
 	totalDeposited = loaded.value().totalDeposited;
 	totalWithdrawn = loaded.value().totalWithdrawn;
-	return true;
+	return SnapshotError::NONE_ERROR;
 }
